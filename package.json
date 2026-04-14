@@ -1,0 +1,86 @@
+{
+  "name": "groundview-ios",
+  "version": "0.1.0",
+  "private": true,
+  "main": "electron/main.js",
+  "description": "GroundView iOS adapter (WDA capture, device listing, locator inputs).",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "diagnose:port": "npm run build && node dist/diagnosePort.js",
+    "test": "vitest run",
+    "cli": "node dist/cli.js",
+    "dev:ts": "tsc -w -p tsconfig.json",
+    "cli:list": "node dist/cli.js list",
+    "cli:health": "node dist/cli.js health",
+    "cli:capture": "node dist/cli.js capture",
+    "ui": "npm run build && node dist/uiServer.js",
+    "dev:ui": "vite",
+    "build:ui": "vite build",
+    "dev:electron": "concurrently \"npm:dev:ui\" \"wait-on http://localhost:5173 && electron electron/main.js\"",
+    "start": "npm run build:ui && electron electron/main.js",
+    "serve:api": "node dist/uiServer.js",
+    "watch": "tsc -w -p tsconfig.json",
+    "dev": "npm run build && concurrently \"npm:watch\" \"npm:serve:api\" \"npm:dev:ui\" \"wait-on http://localhost:5173 && electron electron/main.js\"",
+    "pack": "npm run build && npm run build:ui && electron-builder --dir",
+    "dist": "npm run build && npm run build:ui && electron-builder"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "@types/xml2js": "^0.4.14",
+    "@vitejs/plugin-react": "^5.1.2",
+    "concurrently": "^9.2.1",
+    "electron": "^39.2.6",
+    "electron-builder": "^26.0.12",
+    "typescript": "^5.4.5",
+    "vite": "^7.2.7",
+    "vitest": "^1.6.0",
+    "wait-on": "^9.0.3"
+  },
+  "dependencies": {
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
+    "xml2js": "^0.6.2",
+    "zustand": "^5.0.9"
+  },
+  "build": {
+    "appId": "com.groundview.ios",
+    "productName": "GroundView iOS",
+    "files": [
+      "dist/**/*",
+      "dist-ui/**/*",
+      "electron/**/*",
+      "node_modules/**/*",
+      "resources/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "resources",
+        "to": "resources"
+      }
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.developer-tools",
+      "icon": "electron/icon.icns"
+    },
+    "dmg": {
+      "title": "GroundView iOS",
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    }
+  }
+}

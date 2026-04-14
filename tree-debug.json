@@ -1,0 +1,650 @@
+{
+  "type": "XCUIElementTypeApplication",
+  "name": "익시오",
+  "label": "익시오",
+  "enabled": "true",
+  "visible": "true",
+  "accessible": "false",
+  "x": "0",
+  "y": "0",
+  "width": "402",
+  "height": "874",
+  "index": "0",
+  "children": [
+    {
+      "type": "XCUIElementTypeWindow",
+      "enabled": "true",
+      "visible": "true",
+      "accessible": "false",
+      "x": "0",
+      "y": "0",
+      "width": "402",
+      "height": "874",
+      "index": "0",
+      "children": [
+        {
+          "type": "XCUIElementTypeOther",
+          "enabled": "true",
+          "visible": "false",
+          "accessible": "false",
+          "x": "0",
+          "y": "0",
+          "width": "402",
+          "height": "874",
+          "index": "0",
+          "children": [
+            {
+              "type": "XCUIElementTypeOther",
+              "enabled": "true",
+              "visible": "false",
+              "accessible": "false",
+              "x": "0",
+              "y": "0",
+              "width": "402",
+              "height": "874",
+              "index": "0"
+            }
+          ]
+        },
+        {
+          "type": "XCUIElementTypeOther",
+          "enabled": "true",
+          "visible": "true",
+          "accessible": "false",
+          "x": "0",
+          "y": "0",
+          "width": "402",
+          "height": "874",
+          "index": "1",
+          "children": [
+            {
+              "type": "XCUIElementTypeOther",
+              "name": "CallView",
+              "enabled": "true",
+              "visible": "true",
+              "accessible": "false",
+              "x": "0",
+              "y": "0",
+              "width": "402",
+              "height": "874",
+              "index": "0",
+              "children": [
+                {
+                  "type": "XCUIElementTypeOther",
+                  "enabled": "true",
+                  "visible": "true",
+                  "accessible": "false",
+                  "x": "0",
+                  "y": "0",
+                  "width": "402",
+                  "height": "874",
+                  "index": "0",
+                  "children": [
+                    {
+                      "type": "XCUIElementTypeStaticText",
+                      "name": "00:01",
+                      "label": "00:01",
+                      "value": "00:01",
+                      "enabled": "true",
+                      "visible": "true",
+                      "accessible": "true",
+                      "x": "183",
+                      "y": "80",
+                      "width": "36",
+                      "height": "17",
+                      "index": "0",
+                      "traits": "StaticText"
+                    },
+                    {
+                      "type": "XCUIElementTypeStaticText",
+                      "name": "공공이오",
+                      "label": "공공이오",
+                      "value": "공공이오",
+                      "enabled": "true",
+                      "visible": "true",
+                      "accessible": "true",
+                      "x": "145",
+                      "y": "114",
+                      "width": "112",
+                      "height": "39",
+                      "index": "1",
+                      "traits": "StaticText"
+                    },
+                    {
+                      "type": "XCUIElementTypeStaticText",
+                      "name": "#일상 #약속 #저녁",
+                      "label": "#일상 #약속 #저녁",
+                      "value": "#일상 #약속 #저녁",
+                      "enabled": "true",
+                      "visible": "true",
+                      "accessible": "true",
+                      "x": "148",
+                      "y": "157",
+                      "width": "106",
+                      "height": "18",
+                      "index": "2",
+                      "traits": "StaticText"
+                    },
+                    {
+                      "type": "XCUIElementTypeStaticText",
+                      "name": "AI 호출 버튼을 눌러 물어보세요",
+                      "label": "AI 호출 버튼을 눌러 물어보세요",
+                      "value": "AI 호출 버튼을 눌러 물어보세요",
+                      "enabled": "true",
+                      "visible": "false",
+                      "accessible": "false",
+                      "x": "90",
+                      "y": "256",
+                      "width": "222",
+                      "height": "23",
+                      "index": "10",
+                      "traits": "StaticText"
+                    },
+                    {
+                      "type": "XCUIElementTypeStaticText",
+                      "enabled": "true",
+                      "visible": "false",
+                      "accessible": "false",
+                      "x": "0",
+                      "y": "0",
+                      "width": "0",
+                      "height": "0",
+                      "index": "12",
+                      "traits": "StaticText"
+                    },
+                    {
+                      "type": "XCUIElementTypeStaticText",
+                      "name": "AI 호출",
+                      "label": "AI 호출",
+                      "value": "AI 호출",
+                      "enabled": "true",
+                      "visible": "false",
+                      "accessible": "false",
+                      "x": "177",
+                      "y": "537",
+                      "width": "48",
+                      "height": "20",
+                      "index": "13",
+                      "traits": "StaticText"
+                    },
+                    {
+                      "type": "XCUIElementTypeCollectionView",
+                      "enabled": "true",
+                      "visible": "true",
+                      "accessible": "false",
+                      "x": "0",
+                      "y": "202",
+                      "width": "402",
+                      "height": "395",
+                      "index": "3",
+                      "children": [
+                        {
+                          "type": "XCUIElementTypeCell",
+                          "enabled": "true",
+                          "visible": "true",
+                          "accessible": "false",
+                          "x": "0",
+                          "y": "202",
+                          "width": "402",
+                          "height": "395",
+                          "index": "0",
+                          "children": [
+                            {
+                              "type": "XCUIElementTypeOther",
+                              "enabled": "true",
+                              "visible": "true",
+                              "accessible": "false",
+                              "x": "0",
+                              "y": "202",
+                              "width": "402",
+                              "height": "395",
+                              "index": "0",
+                              "children": [
+                                {
+                                  "type": "XCUIElementTypeOther",
+                                  "enabled": "true",
+                                  "visible": "true",
+                                  "accessible": "false",
+                                  "x": "0",
+                                  "y": "202",
+                                  "width": "402",
+                                  "height": "395",
+                                  "index": "0",
+                                  "children": [
+                                    {
+                                      "type": "XCUIElementTypeOther",
+                                      "enabled": "true",
+                                      "visible": "true",
+                                      "accessible": "false",
+                                      "x": "0",
+                                      "y": "202",
+                                      "width": "402",
+                                      "height": "395",
+                                      "index": "0",
+                                      "children": [
+                                        {
+                                          "type": "XCUIElementTypeOther",
+                                          "enabled": "true",
+                                          "visible": "true",
+                                          "accessible": "false",
+                                          "x": "16",
+                                          "y": "433",
+                                          "width": "370",
+                                          "height": "164",
+                                          "index": "0",
+                                          "children": [
+                                            {
+                                              "type": "XCUIElementTypeStaticText",
+                                              "name": "통화 중 궁금한 건\nAI 비서에게 물어보세요",
+                                              "label": "통화 중 궁금한 건\nAI 비서에게 물어보세요",
+                                              "value": "통화 중 궁금한 건\nAI 비서에게 물어보세요",
+                                              "enabled": "true",
+                                              "visible": "true",
+                                              "accessible": "true",
+                                              "x": "127",
+                                              "y": "465",
+                                              "width": "148",
+                                              "height": "48",
+                                              "index": "0",
+                                              "traits": "StaticText"
+                                            },
+                                            {
+                                              "type": "XCUIElementTypeStaticText",
+                                              "name": "Beta",
+                                              "label": "Beta",
+                                              "value": "Beta",
+                                              "enabled": "true",
+                                              "visible": "true",
+                                              "accessible": "true",
+                                              "x": "150",
+                                              "y": "544",
+                                              "width": "24",
+                                              "height": "15",
+                                              "index": "1",
+                                              "traits": "StaticText"
+                                            },
+                                            {
+                                              "type": "XCUIElementTypeStaticText",
+                                              "name": "AI 비서 열기",
+                                              "label": "AI 비서 열기",
+                                              "value": "AI 비서 열기",
+                                              "enabled": "true",
+                                              "visible": "true",
+                                              "accessible": "true",
+                                              "x": "185",
+                                              "y": "543",
+                                              "width": "70",
+                                              "height": "17",
+                                              "index": "2",
+                                              "traits": "StaticText"
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "XCUIElementTypeOther",
+                          "name": "수직 스크롤 막대, 4페이지",
+                          "label": "수직 스크롤 막대, 4페이지",
+                          "value": "0%",
+                          "enabled": "true",
+                          "visible": "true",
+                          "accessible": "false",
+                          "x": "369",
+                          "y": "202",
+                          "width": "30",
+                          "height": "395",
+                          "index": "1",
+                          "traits": "Adjustable",
+                          "children": [
+                            {
+                              "type": "XCUIElementTypeOther",
+                              "enabled": "true",
+                              "visible": "true",
+                              "accessible": "false",
+                              "x": "396",
+                              "y": "587",
+                              "width": "3",
+                              "height": "8",
+                              "index": "0"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "XCUIElementTypeOther",
+                          "name": "수직 스크롤 막대, 4페이지",
+                          "label": "수직 스크롤 막대, 4페이지",
+                          "value": "0%",
+                          "enabled": "true",
+                          "visible": "true",
+                          "accessible": "false",
+                          "x": "369",
+                          "y": "202",
+                          "width": "30",
+                          "height": "395",
+                          "index": "2",
+                          "traits": "Adjustable",
+                          "children": [
+                            {
+                              "type": "XCUIElementTypeOther",
+                              "enabled": "true",
+                              "visible": "true",
+                              "accessible": "false",
+                              "x": "396",
+                              "y": "587",
+                              "width": "3",
+                              "height": "8",
+                              "index": "0"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "type": "XCUIElementTypeButton",
+                      "name": "통화녹음",
+                      "label": "통화녹음",
+                      "value": "선택됨",
+                      "enabled": "true",
+                      "visible": "true",
+                      "accessible": "true",
+                      "x": "33",
+                      "y": "658",
+                      "width": "64",
+                      "height": "63",
+                      "index": "4",
+                      "traits": "Button",
+                      "children": [
+                        {
+                          "type": "XCUIElementTypeImage",
+                          "name": "call_recording_on_24",
+                          "label": "call_recording_on_24",
+                          "enabled": "true",
+                          "visible": "true",
+                          "accessible": "false",
+                          "x": "51",
+                          "y": "666",
+                          "width": "28",
+                          "height": "29",
+                          "index": "0",
+                          "traits": "Image"
+                        },
+                        {
+                          "type": "XCUIElementTypeStaticText",
+                          "name": "통화 녹음",
+                          "label": "통화 녹음",
+                          "value": "통화 녹음",
+                          "enabled": "true",
+                          "visible": "true",
+                          "accessible": "false",
+                          "x": "42",
+                          "y": "706",
+                          "width": "46",
+                          "height": "15",
+                          "index": "1",
+                          "traits": "StaticText"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "XCUIElementTypeButton",
+                      "name": "소리 끔",
+                      "label": "소리 끔",
+                      "enabled": "true",
+                      "visible": "true",
+                      "accessible": "true",
+                      "x": "183",
+                      "y": "666",
+                      "width": "35",
+                      "height": "55",
+                      "index": "5",
+                      "traits": "Button",
+                      "children": [
+                        {
+                          "type": "XCUIElementTypeImage",
+                          "name": "call_mute_off_24",
+                          "label": "call_mute_off_24",
+                          "enabled": "true",
+                          "visible": "true",
+                          "accessible": "false",
+                          "x": "186",
+                          "y": "666",
+                          "width": "29",
+                          "height": "29",
+                          "index": "0",
+                          "traits": "Image"
+                        },
+                        {
+                          "type": "XCUIElementTypeStaticText",
+                          "name": "소리 끔",
+                          "label": "소리 끔",
+                          "value": "소리 끔",
+                          "enabled": "true",
+                          "visible": "true",
+                          "accessible": "false",
+                          "x": "183",
+                          "y": "706",
+                          "width": "35",
+                          "height": "15",
+                          "index": "1",
+                          "traits": "StaticText"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "XCUIElementTypeButton",
+                      "name": "스피커",
+                      "label": "스피커",
+                      "enabled": "true",
+                      "visible": "true",
+                      "accessible": "true",
+                      "x": "320",
+                      "y": "666",
+                      "width": "32",
+                      "height": "55",
+                      "index": "6",
+                      "traits": "Button",
+                      "children": [
+                        {
+                          "type": "XCUIElementTypeImage",
+                          "name": "call_speaker_off_24",
+                          "label": "call_speaker_off_24",
+                          "enabled": "true",
+                          "visible": "true",
+                          "accessible": "false",
+                          "x": "322",
+                          "y": "666",
+                          "width": "28",
+                          "height": "29",
+                          "index": "0",
+                          "traits": "Image"
+                        },
+                        {
+                          "type": "XCUIElementTypeStaticText",
+                          "name": "스피커",
+                          "label": "스피커",
+                          "value": "스피커",
+                          "enabled": "true",
+                          "visible": "true",
+                          "accessible": "false",
+                          "x": "320",
+                          "y": "706",
+                          "width": "32",
+                          "height": "15",
+                          "index": "1",
+                          "traits": "StaticText"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "XCUIElementTypeButton",
+                      "name": "보이는 전화",
+                      "label": "보이는 전화",
+                      "enabled": "true",
+                      "visible": "true",
+                      "accessible": "true",
+                      "x": "37",
+                      "y": "759",
+                      "width": "56",
+                      "height": "55",
+                      "index": "7",
+                      "traits": "Button",
+                      "children": [
+                        {
+                          "type": "XCUIElementTypeImage",
+                          "name": "call_visualcall_off_24",
+                          "label": "call_visualcall_off_24",
+                          "enabled": "true",
+                          "visible": "true",
+                          "accessible": "false",
+                          "x": "51",
+                          "y": "759",
+                          "width": "28",
+                          "height": "29",
+                          "index": "0",
+                          "traits": "Image"
+                        },
+                        {
+                          "type": "XCUIElementTypeStaticText",
+                          "name": "보이는 전화",
+                          "label": "보이는 전화",
+                          "value": "보이는 전화",
+                          "enabled": "true",
+                          "visible": "true",
+                          "accessible": "false",
+                          "x": "37",
+                          "y": "799",
+                          "width": "56",
+                          "height": "16",
+                          "index": "1",
+                          "traits": "StaticText"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "XCUIElementTypeButton",
+                      "name": "끊기",
+                      "label": "끊기",
+                      "enabled": "true",
+                      "visible": "true",
+                      "accessible": "true",
+                      "x": "165",
+                      "y": "748",
+                      "width": "71",
+                      "height": "70",
+                      "index": "8",
+                      "traits": "Button"
+                    },
+                    {
+                      "type": "XCUIElementTypeButton",
+                      "name": "키패드",
+                      "label": "키패드",
+                      "enabled": "true",
+                      "visible": "true",
+                      "accessible": "true",
+                      "x": "320",
+                      "y": "759",
+                      "width": "32",
+                      "height": "55",
+                      "index": "9",
+                      "traits": "Button",
+                      "children": [
+                        {
+                          "type": "XCUIElementTypeImage",
+                          "name": "call_keypad_off_24",
+                          "label": "call_keypad_off_24",
+                          "enabled": "true",
+                          "visible": "true",
+                          "accessible": "false",
+                          "x": "322",
+                          "y": "759",
+                          "width": "28",
+                          "height": "29",
+                          "index": "0",
+                          "traits": "Image"
+                        },
+                        {
+                          "type": "XCUIElementTypeStaticText",
+                          "name": "키패드",
+                          "label": "키패드",
+                          "value": "키패드",
+                          "enabled": "true",
+                          "visible": "true",
+                          "accessible": "false",
+                          "x": "320",
+                          "y": "799",
+                          "width": "32",
+                          "height": "16",
+                          "index": "1",
+                          "traits": "StaticText"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "XCUIElementTypeImage",
+                      "name": "logo_large_40",
+                      "label": "logo_large_40",
+                      "enabled": "true",
+                      "visible": "false",
+                      "accessible": "false",
+                      "x": "169",
+                      "y": "339",
+                      "width": "64",
+                      "height": "65",
+                      "index": "11",
+                      "traits": "Image"
+                    },
+                    {
+                      "type": "XCUIElementTypeImage",
+                      "name": "summary_collapse_24",
+                      "label": "summary_collapse_24",
+                      "enabled": "true",
+                      "visible": "false",
+                      "accessible": "false",
+                      "x": "354",
+                      "y": "238",
+                      "width": "24",
+                      "height": "25",
+                      "index": "14",
+                      "traits": "Image"
+                    },
+                    {
+                      "type": "XCUIElementTypeOther",
+                      "enabled": "true",
+                      "visible": "false",
+                      "accessible": "false",
+                      "x": "171",
+                      "y": "421",
+                      "width": "60",
+                      "height": "60",
+                      "index": "15",
+                      "children": [
+                        {
+                          "type": "XCUIElementTypeOther",
+                          "enabled": "true",
+                          "visible": "false",
+                          "accessible": "false",
+                          "x": "171",
+                          "y": "421",
+                          "width": "60",
+                          "height": "60",
+                          "index": "0"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

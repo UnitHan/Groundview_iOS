@@ -1,0 +1,12 @@
+node_modules/
+dist/
+dist-ui/
+release/
+*.log
+.DS_Store
+venv/
+__pycache__/
+dump_call.py
+dump_call2.py
+dump_keypad.txt
+dump_result.txt
