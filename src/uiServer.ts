@@ -101,6 +101,10 @@ function getWifiWdaClient(ip: string): WdaClient {
 
 // Track active WiFi connection
 let activeWifiIp: string | null = null;
+// When WDA is launched wirelessly, the same physical device also appears as a
+// UDID card from xctrace whose capture path (USB/iproxy) does not work. We hide
+// that UDID card while the wireless IP card is the active, working target.
+let wirelessLaunchUdid: string | null = null;
 
 const serverPort = Number(process.env.UI_PORT || 4321);
 log('Server port: ' + serverPort);
@@ -454,7 +458,12 @@ async function handleApi(req: http.IncomingMessage, res: http.ServerResponse) {
   if (pathName === '/api/devices') {
     // Ensure iproxy is connected for USB devices
     await ensureIproxyConnection();
-    const devices = await service.listDevices();
+    let devices = await service.listDevices();
+    // After a wireless launch, drop the duplicate UDID card (capture-broken) so
+    // only the working IP card remains.
+    if (wirelessLaunchUdid) {
+      devices = devices.filter((d) => d.id !== wirelessLaunchUdid);
+    }
     sendJson(res, devices);
     return;
   }
@@ -490,17 +499,26 @@ async function handleApi(req: http.IncomingMessage, res: http.ServerResponse) {
         // health/capture path talks to WDA directly at <ip>:<port>.
         if (result.ok && result.transport === 'wireless' && result.deviceIp) {
           try {
-            addManualWifiDevice(result.deviceIp, `WDA (${result.deviceIp})`);
+            // Label the IP card after the real device name for recognisability.
+            let label = `${result.deviceIp}`;
+            try {
+              const devs = await service.listDevices();
+              const name = devs.find((d) => d.id === udid)?.name;
+              if (name) label = `${name} (WiFi)`;
+            } catch { /* fall back to IP */ }
+            addManualWifiDevice(result.deviceIp, label);
             activeWifiIp = result.deviceIp;
-            log(`[wda] wireless: activated WiFi WDA at ${result.deviceIp}`);
+            wirelessLaunchUdid = udid; // hide the duplicate UDID card
+            log(`[wda] wireless: activated WiFi WDA at ${result.deviceIp} (hiding UDID ${udid})`);
           } catch (e) {
             log(`[wda] wireless registration failed: ${e instanceof Error ? e.message : String(e)}`);
           }
         } else if (result.ok && result.transport === 'usb') {
           // USB path uses iproxy/127.0.0.1; clear any stale WiFi override.
           activeWifiIp = null;
+          wirelessLaunchUdid = null;
         }
-        sendJson(res, result);
+        sendJson(res, { ...result, wifiDeviceId: result.deviceIp ? `wifi-${result.deviceIp}` : undefined });
       } catch (e) {
         sendJson(res, { ok: false, error: e instanceof Error ? e.message : String(e) }, 500);
       }
@@ -516,6 +534,15 @@ async function handleApi(req: http.IncomingMessage, res: http.ServerResponse) {
         const udid = String(b.deviceId || b.udid || '') || (await getConnectedDevice()) || '';
         if (!udid) { sendJson(res, { ok: false, error: 'deviceId required' }, 400); return; }
         const r = await stopWda(udid, launcherCfg);
+        // Restore the UDID card and drop the wireless IP card once WDA is down.
+        if (wirelessLaunchUdid === udid) {
+          if (activeWifiIp) {
+            removeManualWifiDevice(activeWifiIp);
+            wifiClients.delete(activeWifiIp);
+            activeWifiIp = null;
+          }
+          wirelessLaunchUdid = null;
+        }
         sendJson(res, r);
       } catch (e) {
         sendJson(res, { ok: false, error: e instanceof Error ? e.message : String(e) }, 500);

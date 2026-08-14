@@ -98,6 +98,10 @@ export function DevicesPage() {
       const r = await res.json();
       if (r.ok && r.ready) {
         setLaunchMsg({ text: t.wda.launchOk, kind: 'ok' });
+        // Wireless: the UDID card is replaced by the working IP card — select it.
+        if (r.transport === 'wireless' && r.wifiDeviceId) {
+          setSelectedDeviceId(r.wifiDeviceId);
+        }
       } else {
         setLaunchMsg({ text: r.error || 'WDA launch failed', hint: r.hint, kind: 'err' });
       }
