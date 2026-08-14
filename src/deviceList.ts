@@ -56,26 +56,54 @@ function run(cmd: string, args: string[], timeoutMs = 6000): Promise<string> {
   });
 }
 
+// Handles both xctrace formats:
+//   old: "Johns iPhone (00008030-001C19563E3A802E) (iOS 17.0.3)"
+//   new: "Nerget QA (17.6.1) (00008110-001679810281401E)"   (real, wireless or USB)
+// Sections "== Devices ==" / "== Simulators ==" are tracked; the host Mac line
+// (no version group) and non-iOS devices (tvOS/watchOS) are dropped.
 export function parseXctraceDevices(raw: string): DeviceRecord[] {
   if (!raw) return [];
-  const lines = raw
-    .split('\n')
-    .map((l) => l.trim())
-    .filter((l) => l && !l.startsWith('==') && !l.toLowerCase().startsWith('legacy'));
+  const UDID_RE = /^[0-9a-f]{40}$|^[0-9A-F]{8}-[0-9A-F]{16}$|^[0-9A-F]{8}(?:-[0-9A-F]{4}){3}-[0-9A-F]{12}$/i;
   const devices: DeviceRecord[] = [];
-  for (const line of lines) {
-    if (!/iOS/i.test(line)) continue;
-    const parenParts = [...line.matchAll(/\(([^)]+)\)/g)].map((m) => m[1]);
-    if (parenParts.length === 0) continue;
-    const osPart = parenParts.find((p) => /^iOS\s/i.test(p));
-    if (!osPart) continue;
-    const udidPart = parenParts.find((p) => /^[0-9a-fA-F-]{6,}$/i.test(p));
-    const name = line.split('(')[0].trim();
-    const isSim = /Simulator/i.test(line);
+  let section = '';
+  for (const rawLine of raw.split('\n')) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    const hdr = line.match(/^==\s*(.+?)\s*==$/);
+    if (hdr) { section = hdr[1].toLowerCase(); continue; }
+
+    const groups = [...line.matchAll(/\(([^)]+)\)/g)].map((m) => m[1].trim());
+    if (!groups.length) continue;
+
+    const udid = groups.find((g) => UDID_RE.test(g));
+    if (!udid) continue; // no device UDID (e.g. host Mac shows only a UUID handled below)
+
+    // Find an OS/version group; reject non-iOS platforms.
+    let osVersion: string | undefined;
+    let nonIos = false;
+    for (const g of groups) {
+      if (g === udid) continue;
+      const m = g.match(/^(iOS|iPadOS|tvOS|watchOS|macOS|xrOS)?\s*(\d+(?:\.\d+)*)$/i);
+      if (m) {
+        const osName = (m[1] || '').toLowerCase();
+        if (osName && osName !== 'ios' && osName !== 'ipados') { nonIos = true; break; }
+        osVersion = m[2];
+        break;
+      }
+    }
+    if (nonIos) continue;
+    if (!osVersion) continue; // host Mac has a UUID but no version → skip
+
+    const isSim =
+      section.startsWith('simulator') ||
+      /\(simulator\)/i.test(line) ||
+      groups.some((g) => /^simulator$/i.test(g));
+    const name = (line.includes('(') ? line.slice(0, line.indexOf('(')) : line).trim();
+
     devices.push({
-      id: udidPart || `${name}-${osPart}`,
-      name,
-      osVersion: osPart.replace(/^iOS\s*/i, ''),
+      id: udid,
+      name: name || 'iOS Device',
+      osVersion,
       kind: isSim ? 'simulator' : 'real',
       platform: 'ios'
     });
@@ -129,7 +157,9 @@ export async function listDevices(): Promise<DeviceRecord[]> {
     run('xcrun', ['xctrace', 'list', 'devices']),
     run(ideviceIdPath, ['-l']).catch(() => '')
   ]);
-  const primary = xcrunOut.status === 'fulfilled' ? parseXctraceDevices(xcrunOut.value) : [];
+  // Real devices only — simulators can't be driven over WDA/iproxy/tunnel here.
+  const primary = (xcrunOut.status === 'fulfilled' ? parseXctraceDevices(xcrunOut.value) : [])
+    .filter((d) => d.kind === 'real');
   const fallback = ideviceOut.status === 'fulfilled' ? parseIdeviceIds(ideviceOut.value) : [];
   
   // idevice_id only detects USB devices
