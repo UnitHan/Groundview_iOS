@@ -5,14 +5,16 @@ import path from 'path';
 import { execFileSync } from 'child_process';
 import { parse as parseUrl } from 'url';
 import { parseString } from 'xml2js';
-import { loadWdaConfig } from './config';
+import { loadWdaConfig, loadLauncherConfig } from './config';
+import { launchWda, stopWda, launchStatus } from './wdaLauncher';
 import { createFileLogger, combineLoggers, Logger } from './logging';
 import { WdaService } from './service';
 import { captureAndNormalize } from './captureAdapter';
-import { ensureIproxyConnection } from './iproxyManager';
+import { ensureIproxyConnection, getConnectedDevice } from './iproxyManager';
 import { geminiGenerateCode, geminiOcr } from './gemini';
 import { addManualWifiDevice, removeManualWifiDevice } from './deviceList';
 import { WdaClient } from './wdaClient';
+import { extractZipBase64, resolveBundleFiles } from './loadZip';
 import {
   clearGeminiKey,
   loadSettings,
@@ -51,6 +53,15 @@ log('Log file: ' + LOG_FILE);
 
 const cfg = loadWdaConfig();
 log('Config loaded: ' + JSON.stringify(cfg.options));
+
+const launcherCfg = loadLauncherConfig();
+log('Launcher config: ' + JSON.stringify({
+  pymobiledevice3Path: launcherCfg.pymobiledevice3Path,
+  iproxyPath: launcherCfg.iproxyPath,
+  tunneldPort: launcherCfg.tunneldPort,
+  wdaPort: launcherCfg.wdaPort,
+  runnerBundleId: launcherCfg.runnerBundleId,
+}));
 
 const service = new WdaService(cfg.options);
 const logger: Logger | undefined = cfg.logFile ? createFileLogger(cfg.logFile) : undefined;
@@ -427,6 +438,71 @@ async function handleApi(req: http.IncomingMessage, res: http.ServerResponse) {
     sendJson(res, devices);
     return;
   }
+  if (pathName === '/api/wda/status') {
+    const udid = String(parsed.query?.deviceId || parsed.query?.udid || '') || (await getConnectedDevice()) || '';
+    if (!udid) { sendJson(res, { ok: false, error: 'no device' }, 200); return; }
+    try {
+      const st = await launchStatus(udid, launcherCfg);
+      sendJson(res, { ok: true, udid, ...st });
+    } catch (e) {
+      sendJson(res, { ok: false, error: e instanceof Error ? e.message : String(e) }, 500);
+    }
+    return;
+  }
+  if (pathName === '/api/wda/launch' && req.method === 'POST') {
+    let body = '';
+    req.on('data', (c) => { body += c; });
+    req.on('end', async () => {
+      try {
+        const b = body ? JSON.parse(body) : {};
+        const udid = String(b.deviceId || b.udid || '') || (await getConnectedDevice()) || '';
+        if (!udid) { sendJson(res, { ok: false, error: 'deviceId required' }, 400); return; }
+        // WDA launch addresses the device by UDID (USB or Xcode-wireless).
+        // Reject manually-registered WiFi IP devices, which already reach a
+        // running WDA directly by IP.
+        if (/^\d{1,3}(\.\d{1,3}){3}(:\d+)?$/.test(udid) || udid.startsWith('wifi-')) {
+          sendJson(res, { ok: false, error: '이 기기는 이미 IP로 WDA에 직접 연결됩니다. WDA 실행은 UDID 기기(USB/무선)에서 사용하세요.' }, 400);
+          return;
+        }
+        log(`[wda] launch requested for ${udid}`);
+        const result = await launchWda(udid, launcherCfg, log);
+        // Wireless: no iproxy/localhost. Register the device LAN IP so the app's
+        // health/capture path talks to WDA directly at <ip>:<port>.
+        if (result.ok && result.transport === 'wireless' && result.deviceIp) {
+          try {
+            addManualWifiDevice(result.deviceIp, `WDA (${result.deviceIp})`);
+            activeWifiIp = result.deviceIp;
+            log(`[wda] wireless: activated WiFi WDA at ${result.deviceIp}`);
+          } catch (e) {
+            log(`[wda] wireless registration failed: ${e instanceof Error ? e.message : String(e)}`);
+          }
+        } else if (result.ok && result.transport === 'usb') {
+          // USB path uses iproxy/127.0.0.1; clear any stale WiFi override.
+          activeWifiIp = null;
+        }
+        sendJson(res, result);
+      } catch (e) {
+        sendJson(res, { ok: false, error: e instanceof Error ? e.message : String(e) }, 500);
+      }
+    });
+    return;
+  }
+  if (pathName === '/api/wda/stop' && req.method === 'POST') {
+    let body = '';
+    req.on('data', (c) => { body += c; });
+    req.on('end', async () => {
+      try {
+        const b = body ? JSON.parse(body) : {};
+        const udid = String(b.deviceId || b.udid || '') || (await getConnectedDevice()) || '';
+        if (!udid) { sendJson(res, { ok: false, error: 'deviceId required' }, 400); return; }
+        const r = await stopWda(udid, launcherCfg);
+        sendJson(res, r);
+      } catch (e) {
+        sendJson(res, { ok: false, error: e instanceof Error ? e.message : String(e) }, 500);
+      }
+    });
+    return;
+  }
   if (pathName === '/api/settings' && req.method === 'GET') {
     const key = await readGeminiKey();
     const model = resolveGeminiModel();
@@ -658,6 +734,55 @@ async function handleApi(req: http.IncomingMessage, res: http.ServerResponse) {
         sendJson(res, { ok: true, file: targetPath });
       } catch (e) {
         sendJson(res, { ok: false, error: e instanceof Error ? e.message : String(e) }, 500);
+      }
+    });
+    return;
+  }
+  if (pathName === '/api/load-zip' && req.method === 'POST') {
+    let body = '';
+    req.on('data', (chunk) => {
+      body += chunk;
+    });
+    req.on('end', async () => {
+      let outDir = '';
+      try {
+        const parsedBody = body ? JSON.parse(body) : {};
+        const zipBase64 = typeof parsedBody.zipBase64 === 'string' ? parsedBody.zipBase64 : '';
+        if (!zipBase64) {
+          sendJson(res, { ok: false, error: 'zipBase64 required' }, 400);
+          return;
+        }
+
+        outDir = extractZipBase64(zipBase64);
+        const { screenshotPath, xmlPath, deviceId } = resolveBundleFiles(outDir);
+
+        const screenshotBuffer = fs.readFileSync(screenshotPath);
+        const screenshot = `data:image/png;base64,${screenshotBuffer.toString('base64')}`;
+
+        let xmlContent = fs.readFileSync(xmlPath, 'utf8');
+        // XML may be wrapped in a JSON envelope ({ value: "<xml>" }) — unwrap it.
+        try {
+          const possibleJson = JSON.parse(xmlContent);
+          if (possibleJson && typeof possibleJson.value === 'string') {
+            xmlContent = possibleJson.value;
+          }
+        } catch {
+          // already plain XML
+        }
+        const tree = await parseXmlToTree(xmlContent);
+
+        log(`✓ Load-zip complete: device=${deviceId}, root children=${tree.children?.length || 0}`);
+        sendJson(res, { ok: true, screenshot, tree, metadata: { deviceId } });
+      } catch (e) {
+        sendJson(res, { ok: false, error: e instanceof Error ? e.message : String(e) }, 500);
+      } finally {
+        if (outDir) {
+          try {
+            fs.rmSync(path.dirname(outDir), { recursive: true, force: true });
+          } catch {
+            // ignore cleanup errors
+          }
+        }
       }
     });
     return;

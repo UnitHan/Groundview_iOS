@@ -30,6 +30,19 @@ type AppState = {
   geminiEnabled: boolean;
   geminiModel: string;
   setGeminiStatus: (enabled: boolean, model?: string) => void;
+
+  // UI language (matches the Appkium Inspector Android app: ko default, en toggle)
+  lang: 'ko' | 'en';
+  setLang: (lang: 'ko' | 'en') => void;
+};
+
+const initialLang = (): 'ko' | 'en' => {
+  try {
+    const v = localStorage.getItem('appkium.lang');
+    return v === 'en' ? 'en' : 'ko';
+  } catch {
+    return 'ko';
+  }
 };
 
 export const useStore = create<AppState>((set) => ({
@@ -61,5 +74,12 @@ export const useStore = create<AppState>((set) => ({
   geminiEnabled: false,
   geminiModel: 'gemini-2.5-flash',
   setGeminiStatus: (geminiEnabled, geminiModel) =>
-    set({ geminiEnabled, geminiModel: geminiModel || 'gemini-2.5-flash' })
+    set({ geminiEnabled, geminiModel: geminiModel || 'gemini-2.5-flash' }),
+
+  // UI language
+  lang: initialLang(),
+  setLang: (lang) => {
+    try { localStorage.setItem('appkium.lang', lang); } catch { /* ignore */ }
+    set({ lang });
+  }
 }));

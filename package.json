@@ -57,6 +57,10 @@
       {
         "from": "resources",
         "to": "resources"
+      },
+      {
+        "from": "win",
+        "to": "win"
       }
     ],
     "directories": {
@@ -81,6 +85,19 @@
           "path": "/Applications"
         }
       ]
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "electron/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": true,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "include": "win/installer.nsh"
     }
   }
 }

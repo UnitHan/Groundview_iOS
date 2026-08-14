@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useStore } from './store';
 import { DevicesPage } from './DevicesPage';
 import { AnalyzePage } from './AnalyzePage';
+import { selectionStyle } from './theme';
 import './style.css';
 
 const API_BASE = 'http://localhost:4321';
@@ -53,7 +54,29 @@ function App() {
     return () => clearInterval(interval);
   }, [setHealth, setDevices, setSelectedDeviceId, setGeminiStatus]);
 
-  return page === 'devices' ? <DevicesPage /> : <AnalyzePage />;
+  // Devices uses the light, padded shell (matches the Appkium Inspector Android
+  // app). Analyze is full-bleed — AnalyzePage owns its own dark full-height layout.
+  if (page === 'analyze') {
+    return (
+      <>
+        <style>{selectionStyle}</style>
+        <AnalyzePage />
+      </>
+    );
+  }
+  return (
+    <div style={{
+      minHeight: '100vh',
+      background: '#f5f7fb',
+      color: '#0f172a',
+      padding: 16,
+      fontFamily: 'Inter, system-ui, sans-serif',
+      position: 'relative',
+    }}>
+      <style>{selectionStyle}</style>
+      <DevicesPage />
+    </div>
+  );
 }
 
 export default App;

@@ -4,5 +4,15 @@
   "timeoutMs": 30000,
   "retries": 2,
   "retryDelayMs": 500,
-  "logFile": "/tmp/groundview-wda.log"
+  "logFile": "/tmp/groundview-wda.log",
+  "launcher": {
+    "pymobiledevice3Path": "/Users/qabulls/Appkium_ixiO_Caller/.venv/bin/pymobiledevice3",
+    "iproxyPath": "/opt/homebrew/bin/iproxy",
+    "tunneldHost": "127.0.0.1",
+    "tunneldPort": 49151,
+    "wdaPort": 8100,
+    "mjpegPort": 9100,
+    "runnerBundleId": "com.jjun.1.WebDriverAgentRunner.xctrunner",
+    "readyTimeoutMs": 60000
+  }
 }

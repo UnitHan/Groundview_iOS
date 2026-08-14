@@ -10,3 +10,8 @@ dump_call.py
 dump_call2.py
 dump_keypad.txt
 dump_result.txt
+# Prebuilt WDA binaries (signed .ipa) — not source; distribute separately
+wda_artifacts_jjun/
+*.ipa
+# Bundled Windows tools populated on the Windows box (see win/WINDOWS_TODO.md)
+win/tools/

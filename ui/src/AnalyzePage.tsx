@@ -2,6 +2,9 @@ import React from 'react';
 import { useStore } from './store';
 import { Overlay } from './Overlay';
 import { TreeView } from './TreeView';
+import { useT } from './i18n';
+import { pressableHandlers } from './theme';
+import geminiLogo from './gemini.png';
 
 const API_BASE = 'http://localhost:4321';
 const APP_ICON =
@@ -333,6 +336,7 @@ export function AnalyzePage() {
     geminiModel,
     setGeminiStatus
   } = useStore();
+  const t = useT();
   const [showDebugPanel, setShowDebugPanel] = React.useState(false);
   const [showSettingsModal, setShowSettingsModal] = React.useState(false);
   const [codeModalOpen, setCodeModalOpen] = React.useState(false);
@@ -434,7 +438,7 @@ export function AnalyzePage() {
       return;
     }
     const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const suggestedName = `GroundView-iOS-${parsedCapture.deviceId}-${stamp}.zip`;
+    const suggestedName = `AppkiumInspector-iOS-${parsedCapture.deviceId}-${stamp}.zip`;
     setSaveLoading(true);
     setSaveMessage(null);
     try {
@@ -656,22 +660,29 @@ export function AnalyzePage() {
         alignItems: 'center',
         justifyContent: 'space-between',
       }}>
-        <button
-          onClick={() => setPage('devices')}
-          style={{
-            background: '#1f2937',
-            border: '1px solid #374151',
-            color: '#e5e7eb',
-            padding: '8px 16px',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontWeight: '600',
-            fontSize: '14px',
-          }}
-        >
-          ← Back to Devices
-        </button>
-        
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button
+            onClick={() => setPage('devices')}
+            style={{
+              background: '#1f2937',
+              border: '1px solid #374151',
+              color: '#e5e7eb',
+              padding: '8px 16px',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: '600',
+              fontSize: '14px',
+            }}
+            {...pressableHandlers}
+          >
+            {t.analyze.back}
+          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ color: '#e5e7eb', fontWeight: 800, fontSize: 16 }}>{t.appName}</span>
+            <img src={geminiLogo} alt="Gemini AI Logo" style={{ height: 22, objectFit: 'contain' }} />
+          </div>
+        </div>
+
         <div style={{ color: '#94a3b8', fontSize: '13px' }}>
           Captured from: <span style={{ color: '#22c55e', fontWeight: '600' }}>{parsedCapture.deviceId}</span>
         </div>
@@ -715,7 +726,7 @@ export function AnalyzePage() {
               }}
               disabled={capturing}
             >
-              {capturing ? 'Capturing...' : 'Capture'}
+              {capturing ? t.analyze.recapturing : t.analyze.recapture}
             </button>
             <button
               onClick={handleSave}
@@ -732,7 +743,7 @@ export function AnalyzePage() {
               }}
               disabled={saveLoading}
             >
-              {saveLoading ? 'Saving...' : 'Save'}
+              {saveLoading ? t.analyze.saving : t.analyze.save}
             </button>
             <button
               onClick={openCodeModal}
@@ -750,7 +761,7 @@ export function AnalyzePage() {
               }}
               title={selectedNode ? '코드 추천' : '요소를 먼저 선택하세요.'}
             >
-              코드 추천
+              {t.analyze.code}
             </button>
             <button
               onClick={runGeminiOcr}
@@ -768,7 +779,7 @@ export function AnalyzePage() {
               disabled={!geminiEnabled || ocrLoading}
               title={geminiEnabled ? 'Gemini OCR' : 'GEMINI_API_KEY 가 설정되지 않았습니다.'}
             >
-              {ocrLoading ? 'Gemini…' : 'Gemini OCR'}
+              {ocrLoading ? t.analyze.ocrRunning : t.analyze.ocr}
             </button>
           </div>
           {saveMessage && (
