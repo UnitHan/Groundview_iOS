@@ -54,6 +54,26 @@ export type Translation = {
     settings: string;
     analyzing: string;
   };
+  deviceInfo: {
+    button: string;
+    title: string;
+    subtitle: string;
+    refresh: string;
+    refreshing: string;
+    close: string;
+    deviceSection: string;
+    appSection: string;
+    connection: string;
+    usb: string;
+    wifi: string;
+    copyBundle: string;
+    capsTitle: string;
+    copy: string;
+    copied: string;
+    missingApp: string;
+    loading: string;
+    error: string;
+  };
   loadZip: {
     failed: string;
     loaded: (id: string) => string;
@@ -116,6 +136,26 @@ const ko: Translation = {
     failed: 'ZIP 불러오기 실패',
     loaded: (id) => `ZIP 불러옴: ${id}`,
   },
+  deviceInfo: {
+    button: '📱 기기 정보',
+    title: '기기 · 앱 정보',
+    subtitle: 'Appium capabilities 구성용',
+    refresh: '🔄 새로고침',
+    refreshing: '조회 중…',
+    close: '닫기',
+    deviceSection: '단말',
+    appSection: '포그라운드 앱',
+    connection: '연결',
+    usb: 'USB',
+    wifi: '무선(Wi-Fi)',
+    copyBundle: '📋 번들 ID 복사',
+    capsTitle: 'Appium Capabilities',
+    copy: '📋 복사하기',
+    copied: '복사됨',
+    missingApp: '⚠️ 앱 정보를 못 읽었어요. 대상 앱을 화면 맨 앞에 두고 🔄 새로고침 하세요.',
+    loading: '기기 정보를 불러오는 중…',
+    error: '기기 정보 조회 실패',
+  },
 };
 
 const en: Translation = {
@@ -173,6 +213,26 @@ const en: Translation = {
   loadZip: {
     failed: 'Failed to load ZIP',
     loaded: (id) => `Loaded ZIP: ${id}`,
+  },
+  deviceInfo: {
+    button: '📱 Device Info',
+    title: 'Device · App Info',
+    subtitle: 'For Appium capabilities',
+    refresh: '🔄 Refresh',
+    refreshing: 'Loading…',
+    close: 'Close',
+    deviceSection: 'Device',
+    appSection: 'Foreground App',
+    connection: 'Connection',
+    usb: 'USB',
+    wifi: 'Wireless (Wi-Fi)',
+    copyBundle: '📋 Copy Bundle ID',
+    capsTitle: 'Appium Capabilities',
+    copy: '📋 Copy',
+    copied: 'Copied',
+    missingApp: '⚠️ Could not read app info. Bring the target app to the foreground and 🔄 Refresh.',
+    loading: 'Loading device info…',
+    error: 'Failed to load device info',
   },
 };
 

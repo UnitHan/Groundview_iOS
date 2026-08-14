@@ -4,6 +4,7 @@ import { Overlay } from './Overlay';
 import { TreeView } from './TreeView';
 import { useT } from './i18n';
 import { pressableHandlers } from './theme';
+import { DeviceInfoModal } from './DeviceInfoModal';
 import geminiLogo from './gemini.png';
 
 const API_BASE = 'http://localhost:4321';
@@ -339,6 +340,7 @@ export function AnalyzePage() {
   const t = useT();
   const [showDebugPanel, setShowDebugPanel] = React.useState(false);
   const [showSettingsModal, setShowSettingsModal] = React.useState(false);
+  const [showDeviceInfo, setShowDeviceInfo] = React.useState(false);
   const [codeModalOpen, setCodeModalOpen] = React.useState(false);
   const [codeTab, setCodeTab] = React.useState<'appium1' | 'appium2' | 'gemini'>('appium2');
   const [codeLang, setCodeLang] = React.useState<'python' | 'java'>('python');
@@ -712,6 +714,22 @@ export function AnalyzePage() {
               ⚙️
             </button>
             <button
+              onClick={() => setShowDeviceInfo(true)}
+              title={t.deviceInfo.title}
+              style={{
+                background: '#1f2937',
+                border: '1px solid #4b5563',
+                color: '#e5e7eb',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: '600',
+                fontSize: '14px',
+              }}
+            >
+              {t.deviceInfo.button}
+            </button>
+            <button
               onClick={handleRecapture}
               style={{
                 background: capturing ? '#64748b' : '#0ea5e9',
@@ -848,6 +866,11 @@ export function AnalyzePage() {
             <div><span style={{ color: '#fbbf24' }}>bounds:</span> [{selectedNode.x}, {selectedNode.y}, {selectedNode.width}, {selectedNode.height}]</div>
           </div>
         </div>
+      )}
+
+      {/* Device · App Info Modal (Appium capabilities) */}
+      {showDeviceInfo && parsedCapture && (
+        <DeviceInfoModal deviceId={parsedCapture.deviceId} onClose={() => setShowDeviceInfo(false)} />
       )}
 
       {/* Settings Modal */}

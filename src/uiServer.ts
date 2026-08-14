@@ -69,6 +69,26 @@ const logger: Logger | undefined = cfg.logFile ? createFileLogger(cfg.logFile) :
 // WiFi WDA client cache (keyed by IP address)
 const wifiClients = new Map<string, WdaClient>();
 
+// Minimal WDA GET → parsed JSON (null on any failure). Used by /api/device-info.
+function wdaGetJson(host: string, port: number, pathName: string, timeoutMs = 3000): Promise<any> {
+  return new Promise((resolve) => {
+    const req = http.request(
+      { hostname: host, port, path: pathName, method: 'GET', timeout: timeoutMs },
+      (res) => {
+        const chunks: Buffer[] = [];
+        res.on('data', (d) => chunks.push(typeof d === 'string' ? Buffer.from(d) : d));
+        res.on('end', () => {
+          try { resolve(JSON.parse(Buffer.concat(chunks).toString('utf8'))); }
+          catch { resolve(null); }
+        });
+      }
+    );
+    req.on('error', () => resolve(null));
+    req.on('timeout', () => { req.destroy(); resolve(null); });
+    req.end();
+  });
+}
+
 function getWifiWdaClient(ip: string): WdaClient {
   let client = wifiClients.get(ip);
   if (!client) {
@@ -501,6 +521,40 @@ async function handleApi(req: http.IncomingMessage, res: http.ServerResponse) {
         sendJson(res, { ok: false, error: e instanceof Error ? e.message : String(e) }, 500);
       }
     });
+    return;
+  }
+  if (pathName === '/api/device-info') {
+    const udid = String(parsed.query?.deviceId || parsed.query?.udid || '') || (await getConnectedDevice()) || '';
+    try {
+      const devices = await service.listDevices();
+      const dev = devices.find((d) => d.id === udid);
+      const port = cfg.options.port ?? 8100;
+      // Reach WDA where it currently lives: WiFi IP (wireless) or 127.0.0.1 (USB/iproxy).
+      const host = activeWifiIp || (dev?.ipAddress) || '127.0.0.1';
+      const status = await wdaGetJson(host, port, '/status');
+      const appInfo = await wdaGetJson(host, port, '/wda/activeAppInfo');
+      const app = appInfo?.value || null;
+      const deviceIp = status?.value?.ios?.ip || dev?.ipAddress || activeWifiIp || undefined;
+      const connectionType = dev?.connectionType || (activeWifiIp ? 'wifi' : 'usb');
+      const wdaUrl = connectionType === 'wifi' && deviceIp ? `http://${deviceIp}:${port}` : `http://127.0.0.1:${port}`;
+      sendJson(res, {
+        ok: true,
+        udid,
+        name: dev?.name || 'iOS Device',
+        platform: 'iOS',
+        platformVersion: dev?.osVersion || status?.value?.os?.version || '',
+        sdkVersion: status?.value?.os?.sdkVersion || '',
+        connectionType,
+        deviceIp,
+        wdaUrl,
+        wdaReady: !!status?.value?.ready,
+        app: app
+          ? { bundleId: app.bundleId || '', name: app.name || '', pid: app.pid }
+          : null,
+      });
+    } catch (e) {
+      sendJson(res, { ok: false, error: e instanceof Error ? e.message : String(e) }, 500);
+    }
     return;
   }
   if (pathName === '/api/settings' && req.method === 'GET') {
