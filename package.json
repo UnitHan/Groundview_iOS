@@ -73,7 +73,12 @@
     "mac": {
       "target": "dmg",
       "category": "public.app-category.developer-tools",
-      "icon": "electron/icon.icns"
+      "icon": "electron/icon.icns",
+      "identity": "SeongJun Choi (35597M53Y5)",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
     },
     "dmg": {
       "title": "GroundView iOS",
