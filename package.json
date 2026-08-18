@@ -70,6 +70,7 @@
     "directories": {
       "output": "release"
     },
+    "afterSign": "build/notarize.js",
     "mac": {
       "target": "dmg",
       "category": "public.app-category.developer-tools",
