@@ -1,0 +1,22 @@
+# 저장소는 LF 통일, 각 OS 체크아웃 시 알아서 변환 (크로스플랫폼 macOS/Windows)
+* text=auto eol=lf
+
+# Windows 전용 스크립트 — CRLF 강제
+*.ps1  text eol=crlf
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+*.nsh  text eol=crlf
+
+# Unix 스크립트 — LF 강제
+*.sh   text eol=lf
+
+# 바이너리 — 변환/diff 금지
+*.png  binary
+*.jpg  binary
+*.ico  binary
+*.icns binary
+*.exe  binary
+*.dll  binary
+*.ipa  binary
+*.zip  binary
+*.pyc  binary
