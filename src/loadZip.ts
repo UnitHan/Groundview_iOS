@@ -80,6 +80,6 @@ export function extractZipBase64(zipBase64: string): string {
   fs.mkdirSync(outDir, { recursive: true });
   fs.writeFileSync(zipPath, buf);
   const unzipBin = process.platform === 'win32' ? 'unzip' : '/usr/bin/unzip';
-  execFileSync(unzipBin, ['-o', zipPath, '-d', outDir]);
+  execFileSync(unzipBin, ['-o', zipPath, '-d', outDir], { windowsHide: true });
   return outDir;
 }

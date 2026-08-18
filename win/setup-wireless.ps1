@@ -31,8 +31,12 @@ if (-not $Udid) {
   Info "USB로 연결된 기기 조회..."
   $json = & $Pmd3 usbmux list 2>$null | Out-String
   try {
-    $devs = $json | ConvertFrom-Json
-    if ($devs.Count -ge 1) { $Udid = $devs[0].Udid }
+    $devs = @($json | ConvertFrom-Json)
+    # pymobiledevice3 v10 short_info uses Identifier/UniqueDeviceID (older builds: Udid)
+    if ($devs.Count -ge 1) {
+      $d = $devs[0]
+      $Udid = $d.Identifier; if (-not $Udid) { $Udid = $d.UniqueDeviceID }; if (-not $Udid) { $Udid = $d.Udid }
+    }
   } catch { }
   if (-not $Udid) { throw "USB 기기를 찾지 못했습니다. 케이블 연결 + 잠금 해제 + '신뢰'를 확인하세요." }
 }
@@ -40,7 +44,7 @@ Ok "UDID = $Udid"
 
 # --- 1) enable wifi connections (Xcode 'Connect via network' equivalent) ---
 Info "WiFi 연결 활성화 (wifi-connections on)..."
-& $Pmd3 lockdown wifi-connections on --udid $Udid
+& $Pmd3 lockdown wifi-connections --state on --udid $Udid
 Ok "WiFi 연결 활성화됨"
 
 # --- 2) developer mode ----------------------------------------------------

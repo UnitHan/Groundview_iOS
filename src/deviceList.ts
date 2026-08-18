@@ -3,6 +3,7 @@ import os from 'os';
 import path from 'path';
 import fs from 'fs';
 import { DeviceRecord, ConnectionType } from './types';
+import { loadLauncherConfig } from './config';
 
 // Get bundled binary path
 function getBundledBinaryPath(name: string): string {
@@ -125,6 +126,57 @@ export function parseIdeviceIds(raw: string): DeviceRecord[] {
   }));
 }
 
+// Parse `pymobiledevice3 usbmux list` JSON (used on Windows, where there is no
+// xctrace). Each entry is a lockdown short_info dict:
+//   { Identifier|UniqueDeviceID, DeviceName, ProductVersion, DeviceClass, ConnectionType }
+// ConnectionType is "USB" or "Network" (Xcode "Connect via network").
+export function parsePmd3UsbmuxList(raw: string): DeviceRecord[] {
+  if (!raw) return [];
+  let arr: any[];
+  try {
+    const parsed = JSON.parse(raw);
+    arr = Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+  const devices: DeviceRecord[] = [];
+  for (const d of arr) {
+    if (!d || typeof d !== 'object') continue;
+    const id = String(d.Identifier || d.UniqueDeviceID || d.Udid || d.SerialNumber || '').trim();
+    if (!id) continue;
+    const cls = String(d.DeviceClass || '').toLowerCase();
+    if (cls && !/iphone|ipad|ipod/.test(cls)) continue; // drop tvOS/watchOS/macOS
+    const conn = String(d.ConnectionType || '').toLowerCase();
+    const connectionType: ConnectionType | undefined =
+      conn === 'usb' ? 'usb' : conn === 'network' ? 'wifi' : undefined;
+    devices.push({
+      id,
+      name: String(d.DeviceName || 'iOS Device'),
+      osVersion: d.ProductVersion ? String(d.ProductVersion) : undefined,
+      platform: 'ios',
+      kind: 'real',
+      connectionType,
+    });
+  }
+  return devices;
+}
+
+// Windows device discovery via pymobiledevice3 (usbmuxd over Apple Mobile
+// Device Support). Lists both USB and Xcode-wireless (Network) devices, then
+// merges any manually-registered WiFi-IP devices.
+async function listDevicesWindows(): Promise<DeviceRecord[]> {
+  const cfg = loadLauncherConfig();
+  let usbmux: DeviceRecord[] = [];
+  try {
+    const out = await run(cfg.pymobiledevice3Path, ['usbmux', 'list'], 8000);
+    usbmux = parsePmd3UsbmuxList(out);
+  } catch {
+    // pymobiledevice3 missing or usbmuxd (Apple Mobile Device Support) not installed
+    usbmux = [];
+  }
+  return mergeDevices(usbmux, getManualWifiDevices());
+}
+
 export function mergeDevices(primary: DeviceRecord[], fallback: DeviceRecord[]): DeviceRecord[] {
   const map = new Map<string, DeviceRecord>();
   const push = (d: DeviceRecord) => {
@@ -148,8 +200,9 @@ export function mergeDevices(primary: DeviceRecord[], fallback: DeviceRecord[]):
 }
 
 export async function listDevices(): Promise<DeviceRecord[]> {
-  if (process.platform !== 'darwin') return [];
-  
+  if (process.platform === 'win32') return listDevicesWindows();
+  if (process.platform !== 'darwin') return getManualWifiDevices();
+
   // Use bundled idevice_id binary
   const ideviceIdPath = getBundledBinaryPath('idevice_id');
   

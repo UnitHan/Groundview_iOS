@@ -89,6 +89,22 @@ export async function isTunneldUp(cfg: LauncherConfig): Promise<boolean> {
   }
 }
 
+// Re-resolve a wireless device's CURRENT LAN IP, keyed only by the (stable) UDID.
+// Works in a dynamic-DHCP environment: the RemoteXPC tunnel address survives IP
+// changes, and WDA's /status reports the device's live LAN IP (value.ios.ip).
+// Chain: UDID -> tunneld REST -> tunnel-address -> GET /status -> ios.ip.
+export async function resolveWirelessIp(
+  udid: string,
+  cfg: LauncherConfig
+): Promise<{ ip: string; tunnel: TunnelInfo } | null> {
+  const tunnel = await getDeviceTunnel(udid, cfg);
+  if (!tunnel) return null;
+  const st = await checkWdaStatus(tunnel.address, cfg.wdaPort, 2500);
+  const ip = st.raw?.ios?.ip;
+  if (st.ready && ip) return { ip: String(ip), tunnel };
+  return null;
+}
+
 // --- WDA status -----------------------------------------------------------
 
 export function checkWdaStatus(host: string, port: number, timeoutMs = 2000): Promise<{ ready: boolean; raw?: any }> {
@@ -136,11 +152,40 @@ function pkillPattern(pattern: string): Promise<void> {
 
 // --- runner bundle discovery ---------------------------------------------
 
+// Pick the WebDriverAgent XCUITest runner bundle id from a list of candidate ids.
+// Prefer `*.xctrunner` ids that mention WebDriverAgent; fall back to any xctrunner.
+function pickRunnerBundleId(ids: string[]): string | null {
+  const xctrunners = ids.filter((id) => /\.xctrunner$/i.test(id));
+  return (
+    xctrunners.find((id) => /webdriveragent/i.test(id)) ||
+    xctrunners[0] ||
+    null
+  );
+}
+
 // Find the installed WebDriverAgent XCUITest runner bundle id.
 // macOS: CoreDevice (devicectl) — uses system trust, no pymobiledevice3 pairing.
-// Other platforms: no xcrun; callers should set launcher.runnerBundleId in config.
-export async function discoverRunnerBundleId(udid: string): Promise<string | null> {
-  if (IS_WIN || process.platform !== 'darwin') return null;
+// Windows: pymobiledevice3 apps list (needs the tunnel/pairing that tunneld holds).
+// If discovery fails, callers should set launcher.runnerBundleId in config.
+export async function discoverRunnerBundleId(udid: string, pymobiledevice3Path?: string): Promise<string | null> {
+  if (IS_WIN) {
+    if (!pymobiledevice3Path) return null;
+    try {
+      const { stdout } = await execFileAsync(
+        pymobiledevice3Path,
+        ['apps', 'list', '-t', 'User', '--udid', udid],
+        { timeout: 20000, maxBuffer: 16 * 1024 * 1024, windowsHide: true, encoding: 'utf8' } as any
+      );
+      const stdoutStr = String(stdout);
+      const parsed = JSON.parse(stdoutStr.trim() || '{}');
+      // apps list returns a dict keyed by bundle id.
+      const ids = parsed && typeof parsed === 'object' ? Object.keys(parsed) : [];
+      return pickRunnerBundleId(ids);
+    } catch {
+      return null;
+    }
+  }
+  if (process.platform !== 'darwin') return null;
   try {
     const { stdout } = await execFileAsync('xcrun', ['devicectl', 'device', 'info', 'apps', '--device', udid], {
       timeout: 20000,
@@ -172,6 +217,7 @@ async function startIproxy(cfg: LauncherConfig, udid: string, logFile: string): 
   const child = spawn(cfg.iproxyPath, [String(cfg.wdaPort), String(cfg.wdaPort), '-u', udid], {
     stdio: ['ignore', out, out],
     detached: true,
+    windowsHide: true,
   });
   child.unref();
   const rec = launchedPids.get(udid) || {};
@@ -235,7 +281,7 @@ export async function launchWda(
   }
 
   // 2) resolve runner bundle id
-  const runner = cfg.runnerBundleId || (await discoverRunnerBundleId(udid));
+  const runner = cfg.runnerBundleId || (await discoverRunnerBundleId(udid, cfg.pymobiledevice3Path));
   if (!runner) {
     return {
       ok: false,
@@ -265,6 +311,7 @@ export async function launchWda(
   const child = spawn(cfg.pymobiledevice3Path, args, {
     stdio: ['ignore', out, out],
     detached: true,
+    windowsHide: true, // no console window flash in packaged builds
     env: { ...process.env },
   });
   child.unref();
@@ -325,10 +372,10 @@ export async function stopWda(udid: string, cfg: LauncherConfig): Promise<{ ok: 
   killPid(rec?.dvt);
   killPid(rec?.iproxy);
   launchedPids.delete(udid);
-  const runner = cfg.runnerBundleId || (await discoverRunnerBundleId(udid)) || 'WebDriverAgentRunner';
+  const runner = cfg.runnerBundleId || (await discoverRunnerBundleId(udid, cfg.pymobiledevice3Path)) || 'WebDriverAgentRunner';
   await pkillPattern(`developer dvt xcuitest.*${runner}`);
   // testmanagerd-side kill works over the tunnel on any platform.
-  await execFileAsync(cfg.pymobiledevice3Path, ['developer', 'dvt', 'pkill', 'WebDriverAgentRunner-Runner', '--tunnel', udid])
+  await execFileAsync(cfg.pymobiledevice3Path, ['developer', 'dvt', 'pkill', 'WebDriverAgentRunner-Runner', '--tunnel', udid], { windowsHide: true } as any)
     .catch(() => undefined);
   await pkillPattern(`iproxy ${cfg.wdaPort}`);
   return { ok: true };
@@ -345,6 +392,6 @@ export async function launchStatus(udid: string, cfg: LauncherConfig): Promise<{
     checkWdaStatus('127.0.0.1', cfg.wdaPort, 1200),
   ]);
   const tunneldUp = tunnel ? true : await isTunneldUp(cfg);
-  const runnerBundleId = cfg.runnerBundleId || (await discoverRunnerBundleId(udid));
+  const runnerBundleId = cfg.runnerBundleId || (await discoverRunnerBundleId(udid, cfg.pymobiledevice3Path));
   return { tunneldUp, tunnel, wdaReady: wda.ready, runnerBundleId };
 }

@@ -6,7 +6,7 @@ import { execFileSync } from 'child_process';
 import { parse as parseUrl } from 'url';
 import { parseString } from 'xml2js';
 import { loadWdaConfig, loadLauncherConfig } from './config';
-import { launchWda, stopWda, launchStatus } from './wdaLauncher';
+import { launchWda, stopWda, launchStatus, resolveWirelessIp } from './wdaLauncher';
 import { createFileLogger, combineLoggers, Logger } from './logging';
 import { WdaService } from './service';
 import { captureAndNormalize } from './captureAdapter';
@@ -99,6 +99,30 @@ function getWifiWdaClient(ip: string): WdaClient {
   return client;
 }
 
+// Dynamic-DHCP support: the device's LAN IP can change over a long run. Re-resolve
+// the current IP via the (stable) UDID -> tunnel -> /status chain and, if it moved,
+// swap the registered WiFi device + client so capture/health keep working with no
+// static IP / DHCP reservation required. Returns the current active WiFi IP or null.
+async function refreshWirelessIp(): Promise<string | null> {
+  if (!wirelessLaunchUdid) return null;
+  const r = await resolveWirelessIp(wirelessLaunchUdid, launcherCfg);
+  if (!r) return null;
+  if (r.ip !== activeWifiIp) {
+    const old = activeWifiIp;
+    let label = `${r.ip}`;
+    try {
+      const devs = await service.listDevices();
+      const name = devs.find((d) => d.id === wirelessLaunchUdid)?.name;
+      if (name) label = `${name} (WiFi)`;
+    } catch { /* fall back to IP label */ }
+    if (old) { removeManualWifiDevice(old); wifiClients.delete(old); }
+    addManualWifiDevice(r.ip, label);
+    activeWifiIp = r.ip;
+    log(`[wda] wireless IP changed ${old} -> ${r.ip} (dynamic DHCP), re-registered`);
+  }
+  return activeWifiIp;
+}
+
 // Track active WiFi connection
 let activeWifiIp: string | null = null;
 // When WDA is launched wirelessly, the same physical device also appears as a
@@ -186,7 +210,7 @@ function createCaptureBundle(params: {
 
 function zipDirectory(sourceDir: string, targetZipPath: string): void {
   const zipBin = process.platform === 'darwin' ? '/usr/bin/zip' : 'zip';
-  execFileSync(zipBin, ['-r', targetZipPath, '.'], { cwd: sourceDir });
+  execFileSync(zipBin, ['-r', targetZipPath, '.'], { cwd: sourceDir, windowsHide: true });
 }
 
 // Auto-check iproxy connection every 3 seconds
@@ -439,8 +463,12 @@ async function handleApi(req: http.IncomingMessage, res: http.ServerResponse) {
   if (pathName === '/api/health') {
     // Try WiFi connection first if active
     if (activeWifiIp) {
-      const wifiClient = getWifiWdaClient(activeWifiIp);
-      const wifiHealth = await wifiClient.health();
+      let wifiHealth = await getWifiWdaClient(activeWifiIp).health();
+      if (!wifiHealth.ok) {
+        // Device IP may have changed (dynamic DHCP) — re-resolve via tunnel + retry.
+        const newIp = await refreshWirelessIp();
+        if (newIp) wifiHealth = await getWifiWdaClient(newIp).health();
+      }
       if (wifiHealth.ok) {
         log(`Health check (WiFi ${activeWifiIp}): OK - ${wifiHealth.details || ''}`);
         sendJson(res, { ...wifiHealth, connectionType: 'wifi', ip: activeWifiIp });
@@ -650,16 +678,21 @@ async function handleApi(req: http.IncomingMessage, res: http.ServerResponse) {
         if (isWifi && device?.ipAddress) {
           // WiFi capture: use direct IP connection, no iproxy needed
           log(`WiFi capture for ${device.name} at ${device.ipAddress}`);
-          const wifiClient = getWifiWdaClient(device.ipAddress);
-          const wifiHealth = await wifiClient.health();
+          let targetIp = device.ipAddress;
+          let wifiHealth = await getWifiWdaClient(targetIp).health();
           if (!wifiHealth.ok) {
-            log(`✗ WiFi WDA not reachable at ${device.ipAddress}: ${wifiHealth.details}`);
-            sendJson(res, { error: `WiFi WDA not reachable at ${device.ipAddress}. Ensure WDA is running on the device.` }, 500);
+            // dynamic-DHCP: device IP may have moved — re-resolve via tunnel + retry
+            const newIp = await refreshWirelessIp();
+            if (newIp) { targetIp = newIp; wifiHealth = await getWifiWdaClient(newIp).health(); }
+          }
+          if (!wifiHealth.ok) {
+            log(`✗ WiFi WDA not reachable at ${targetIp}: ${wifiHealth.details}`);
+            sendJson(res, { error: `WiFi WDA not reachable at ${targetIp}. Ensure WDA is running on the device.` }, 500);
             return;
           }
-          log(`✓ WiFi WDA ready at ${device.ipAddress}`);
+          log(`✓ WiFi WDA ready at ${targetIp}`);
           const captureLogger = logger ? combineLoggers(logger, mainLogger) : mainLogger;
-          const wifiOpts = { ...cfg.options, host: device.ipAddress, port: cfg.options.port ?? 8100 };
+          const wifiOpts = { ...cfg.options, host: targetIp, port: cfg.options.port ?? 8100 };
           const cap = await captureAndNormalize(deviceId, wifiOpts, { log: captureLogger });
           if (cap.error) {
             log(`✗ WiFi capture failed: ${cap.error}`);

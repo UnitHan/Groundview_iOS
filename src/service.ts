@@ -22,20 +22,19 @@ export class WdaService implements DeviceService {
     this.isMacFn = deps.isMac || isMac;
   }
 
+  // Device discovery and WDA I/O are cross-platform: listDevices() picks the
+  // per-OS backend (xctrace on macOS, pymobiledevice3 on Windows) and capture/
+  // health talk plain HTTP to WDA (127.0.0.1 over iproxy, or the device LAN IP
+  // when wireless). No macOS gate — Windows drives the same WDA endpoints.
   async listDevices() {
-    if (!this.isMacFn()) return [];
     return this.listFn();
   }
 
   async capture(_deviceId: string): Promise<CaptureResult> {
-    if (!this.isMacFn()) {
-      return { screenshotPath: '', xmlPath: '', error: 'WDA capture requires macOS' };
-    }
     return this.client.capture();
   }
 
   async health(): Promise<HealthStatus> {
-    if (!this.isMacFn()) return { ok: false, details: 'WDA available on macOS only' };
     return this.client.health();
   }
 }

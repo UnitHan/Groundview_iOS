@@ -12,6 +12,6 @@
 
 !macro customUnInstall
   DetailPrint "Removing GroundView tunneld background task..."
-  nsExec::ExecToLog 'powershell -NoProfile -ExecutionPolicy Bypass -Command "Unregister-ScheduledTask -TaskName GroundViewTunneld -Confirm:$false -ErrorAction SilentlyContinue"'
+  nsExec::ExecToLog 'powershell -NoProfile -ExecutionPolicy Bypass -Command "Unregister-ScheduledTask -TaskName GroundViewTunneld -Confirm:$$false -ErrorAction SilentlyContinue"'
   Pop $0
 !macroend

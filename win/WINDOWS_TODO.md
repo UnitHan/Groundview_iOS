@@ -27,7 +27,9 @@ macOS에서 원리·레시피를 검증했고, 크로스플랫폼 코드와 Wind
 
 - [ ] **Python 3.11+** 설치, `pip install pymobiledevice3` (또는 빌드된 `pymobiledevice3.exe` 사용)
 - [ ] **go-ios** (`ios.exe`) 다운로드 — 대체 터널/런치 도구 (선택)
-- [ ] **Apple Mobile Device Support + Bonjour** — iTunes(또는 Apple Devices 앱) 설치로 usbmux/mDNS 확보
+- [ ] **Apple Mobile Device Support(usbmux)** — **Microsoft Store "Apple Devices" 앱** 또는 iTunes 설치.
+      회사 정책으로 iTunes 차단 시 Store 앱 사용. Bonjour는 불필요(tunneld `--wifi`가 자체 mDNS 수행).
+      자세한 근거: `win/WHY_WIRELESS.md`
 - [ ] **Wintun** — `wintun.dll`을 `pymobiledevice3.exe`와 같은 폴더 또는 PATH에 배치 (https://www.wintun.net)
 - [ ] **Node.js 18+** (앱 빌드용), 이 리포지토리 클론 후 `npm ci`
 - [ ] 방화벽: mDNS(UDP 5353) 및 로컬 터널 트래픽 허용
@@ -76,14 +78,20 @@ macOS에서 원리·레시피를 검증했고, 크로스플랫폼 코드와 Wind
 - 무선 성공 시 기기 LAN IP를 앱 WiFi 경로에 자동 등록(health/capture가 IP로 접속).
 
 Windows에서 할 일:
-- [ ] `wda.config.json`의 `launcher.pymobiledevice3Path` / `iosPath`를 Windows 경로로 지정
-      (또는 환경변수 `PYMOBILEDEVICE3_PATH`, `GO_IOS_PATH`)
-- [ ] `launcher.runnerBundleId` 설정 — **Windows엔 `xcrun devicectl`이 없어 자동탐색 불가**.
+- [x] pymobiledevice3 경로 자동 해석 — `src/config.ts`가 win에서 `.venv\Scripts\` →
+      `resources\win\tools\` → PATH 순으로 `pymobiledevice3.exe`를 찾음. config 파일의
+      macOS 경로는 존재하지 않으면 자동 무시. (env `PYMOBILEDEVICE3_PATH`로 override 가능)
+- [ ] `launcher.runnerBundleId` 설정(선택) — 자동 탐색 실패 시에만 필요.
       예: `com.jjun.1.WebDriverAgentRunner.xctrunner` (설치된 러너 번들 ID)
-- [ ] `npm ci && npm run build && npm run build:ui` 후 `npm run dev:electron`로 실행
-- [ ] Devices에서 기기 선택 → **"WDA 실행"** 클릭 → 무선 기동 확인
-- [ ] (필요 시) `discoverRunnerBundleId`에 Windows용 앱 목록 조회 추가:
-      `pymobiledevice3 apps list --udid <UDID>` 또는 `ios apps --udid <UDID>` 파싱
+- [x] `npm install && npm run build && npm run build:ui` 검증 완료 (Windows). `npm run dev:electron` 실행 가능
+- [ ] Devices에서 기기 선택 → **"WDA 실행"** 클릭 → 무선 기동 확인 (실기기 + tunneld 등록 후)
+- [x] `discoverRunnerBundleId` Windows 지원 추가 완료:
+      `pymobiledevice3 apps list -t User --udid <UDID>`의 `.xctrunner` 키 파싱
+- [x] **추가 발견/수정**: 앱이 macOS 전용으로 막혀 있던 부분 크로스플랫폼화
+      - `src/service.ts` — `listDevices/capture/health`의 macOS 게이트 제거 (WDA는 HTTP)
+      - `src/deviceList.ts` — Windows 기기 탐색(`pymobiledevice3 usbmux list`, USB+Network)
+      - `src/iproxyManager.ts` — Windows는 iproxy 미사용(무선 직결), 기기 탐색은 pymobiledevice3
+      - 검증: Windows에서 `/api/devices`가 실기기(UDID/이름/iOS버전) 정상 반환
 
 ---
 

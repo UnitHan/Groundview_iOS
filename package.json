@@ -60,7 +60,11 @@
       },
       {
         "from": "win",
-        "to": "win"
+        "to": "win",
+        "filter": [
+          "tools/**",
+          "*.ps1"
+        ]
       }
     ],
     "directories": {

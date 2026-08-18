@@ -40,23 +40,69 @@ function configFromEnv(env: NodeJS.ProcessEnv): WdaConfig {
   return { options, logFile: logFile || undefined };
 }
 
+// First existing path among candidates, else the last candidate (fallback that
+// resolves through PATH). Lets a platform-specific config value be ignored on a
+// platform where it doesn't exist (e.g. a macOS pymobiledevice3 path on Windows).
+function firstExisting(candidates: Array<string | undefined>, fallback: string): string {
+  for (const c of candidates) {
+    if (c && fs.existsSync(c)) return c;
+  }
+  // If an explicit value was given but doesn't exist as a file, still honour it
+  // (it may resolve through PATH); otherwise use the fallback.
+  const explicit = candidates.find((c) => !!c);
+  return explicit || fallback;
+}
+
+// Candidate locations for a bundled Windows .exe tool, tried in order:
+//   1) <resourcesPath>\win\tools\<name>  (packaged app: extraResources land here,
+//      OUTSIDE app.asar — process.resourcesPath is the only correct base)
+//   2) resources\win\tools\<name>        (repo/dev layout relative to project root)
+//   3) .venv\Scripts\<name>              (dedicated dev virtualenv, see WINDOWS_TODO)
+function winBundledCandidates(name: string): string[] {
+  const root = path.resolve(__dirname, '..'); // dist/ -> project root (dev)
+  const cands: string[] = [];
+  // Packaged Electron app: extraResources (win/) are copied to
+  // <install>\resources\win, i.e. process.resourcesPath\win — never inside asar.
+  const resourcesPath = (process as any).resourcesPath as string | undefined;
+  if (resourcesPath) {
+    cands.push(path.join(resourcesPath, 'win', 'tools', name));
+  }
+  cands.push(path.join(root, 'resources', 'win', 'tools', name));
+  cands.push(path.join(root, '.venv', 'Scripts', name));
+  return cands;
+}
+
 // Launcher config: paths + ports for the "WDA 실행" button. Values come from
-// wda.config.json ("launcher" block) or env, with sensible macOS defaults.
+// wda.config.json ("launcher" block) or env, with sensible per-OS defaults.
 export function loadLauncherConfig(env: NodeJS.ProcessEnv = process.env): LauncherConfig {
   const wda = loadWdaConfig(env);
   const fileBlock = launcherBlockFromFile(env.WDA_CONFIG || 'wda.config.json');
   const num = (v: any, d: number) => (Number.isFinite(Number(v)) ? Number(v) : d);
   const isWin = process.platform === 'win32';
-  // Platform-aware defaults. On Windows, expect the bundled/-on-PATH .exe tools
-  // (the all-in-one installer drops pymobiledevice3.exe / ios.exe next to the app);
-  // on macOS, the paths verified in this repo.
-  const defPmd3 = isWin ? 'pymobiledevice3' : '/Users/qabulls/Appkium_ixiO_Caller/.venv/bin/pymobiledevice3';
-  const defIproxy = isWin ? 'iproxy' : '/opt/homebrew/bin/iproxy';
-  const defIos = isWin ? 'ios' : 'ios';
+  // Platform-aware defaults. On Windows, prefer a bundled/venv pymobiledevice3.exe
+  // and fall back to PATH; the config file's macOS paths are skipped when absent.
+  let pymobiledevice3Path: string;
+  let iproxyPath: string;
+  let iosPath: string;
+  if (isWin) {
+    pymobiledevice3Path = firstExisting(
+      [env.PYMOBILEDEVICE3_PATH, fileBlock.pymobiledevice3Path, ...winBundledCandidates('pymobiledevice3.exe')],
+      'pymobiledevice3'
+    );
+    iproxyPath = env.IPROXY_PATH || fileBlock.iproxyPath || 'iproxy';
+    iosPath = firstExisting(
+      [env.GO_IOS_PATH, fileBlock.iosPath, ...winBundledCandidates('ios.exe')],
+      'ios'
+    );
+  } else {
+    pymobiledevice3Path = env.PYMOBILEDEVICE3_PATH || fileBlock.pymobiledevice3Path || '/Users/qabulls/Appkium_ixiO_Caller/.venv/bin/pymobiledevice3';
+    iproxyPath = env.IPROXY_PATH || fileBlock.iproxyPath || '/opt/homebrew/bin/iproxy';
+    iosPath = env.GO_IOS_PATH || fileBlock.iosPath || 'ios';
+  }
   return {
-    pymobiledevice3Path: env.PYMOBILEDEVICE3_PATH || fileBlock.pymobiledevice3Path || defPmd3,
-    iproxyPath: env.IPROXY_PATH || fileBlock.iproxyPath || defIproxy,
-    iosPath: env.GO_IOS_PATH || fileBlock.iosPath || defIos,
+    pymobiledevice3Path,
+    iproxyPath,
+    iosPath,
     tunneldHost: env.TUNNELD_HOST || fileBlock.tunneldHost || '127.0.0.1',
     tunneldPort: num(env.TUNNELD_PORT || fileBlock.tunneldPort, 49151),
     wdaPort: num(env.WDA_PORT || fileBlock.wdaPort || wda.options.port, 8100),

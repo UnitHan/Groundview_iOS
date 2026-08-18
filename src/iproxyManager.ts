@@ -1,10 +1,13 @@
-import { exec, spawn } from 'child_process';
+import { exec, execFile, spawn } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
+import { loadLauncherConfig } from './config';
 
 const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
+const IS_WIN = process.platform === 'win32';
 
 function resolveLogDir(): string {
   if (process.platform === 'darwin') {
@@ -66,7 +69,28 @@ function log(message: string) {
 let iproxyProcess: ReturnType<typeof exec> | null = null;
 let currentDeviceId: string | null = null;
 
+// Windows: enumerate the first device UDID via pymobiledevice3 (usbmuxd over
+// Apple Mobile Device Support). Covers USB and Xcode-wireless devices. There is
+// no idevice_id/iproxy on Windows — the app reaches WDA at the device LAN IP.
+async function getConnectedDeviceWindows(): Promise<string | null> {
+  try {
+    const cfg = loadLauncherConfig();
+    const { stdout } = await execFileAsync(cfg.pymobiledevice3Path, ['usbmux', 'list', '--simple'], {
+      timeout: 8000,
+      windowsHide: true,
+      encoding: 'utf8',
+    } as any);
+    const parsed = JSON.parse(String(stdout).trim() || '[]');
+    const udid = Array.isArray(parsed) ? String(parsed[0] || '').trim() : '';
+    if (udid) log(`Device detected (pymobiledevice3): ${udid}`);
+    return udid || null;
+  } catch (e) {
+    return null;
+  }
+}
+
 export async function getConnectedDevice(): Promise<string | null> {
+  if (IS_WIN) return getConnectedDeviceWindows();
   try {
     const ideviceIdPath = getBundledBinaryPath('idevice_id');
     const libPath = getBundledLibPath();
@@ -89,6 +113,7 @@ export async function getConnectedDevice(): Promise<string | null> {
 }
 
 export async function isIproxyRunning(): Promise<boolean> {
+  if (IS_WIN) return false; // no iproxy on Windows (wireless-only path)
   try {
     const { stdout } = await execAsync('lsof -i :8100 -t 2>/dev/null || echo ""');
     return stdout.trim().length > 0;
@@ -98,6 +123,7 @@ export async function isIproxyRunning(): Promise<boolean> {
 }
 
 export async function stopIproxy(): Promise<void> {
+  if (IS_WIN) return; // no iproxy process on Windows
   if (iproxyProcess) {
     try {
       iproxyProcess.kill();
@@ -114,6 +140,9 @@ export async function stopIproxy(): Promise<void> {
 }
 
 export async function startIproxy(deviceId: string): Promise<boolean> {
+  // Windows goes wireless-first: WDA is reached at the device LAN IP, so there
+  // is no usbmux port-forward to start. Report success without spawning iproxy.
+  if (IS_WIN) return true;
   try {
     log(`Starting iproxy for device: ${deviceId}`);
     await stopIproxy();
@@ -175,7 +204,13 @@ export async function startIproxy(deviceId: string): Promise<boolean> {
 
 export async function ensureIproxyConnection(): Promise<{ connected: boolean; deviceId: string | null }> {
   const deviceId = await getConnectedDevice();
-  
+
+  // Windows: no iproxy. "connected" simply means a device is enumerable via
+  // usbmuxd; WDA traffic later goes to the device LAN IP (wireless).
+  if (IS_WIN) {
+    return { connected: !!deviceId, deviceId };
+  }
+
   if (!deviceId) {
     if (currentDeviceId !== null) {
       log('Device disconnected, stopping iproxy');

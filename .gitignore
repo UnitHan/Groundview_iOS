@@ -5,6 +5,7 @@ release/
 *.log
 .DS_Store
 venv/
+.venv/
 __pycache__/
 dump_call.py
 dump_call2.py
@@ -15,3 +16,6 @@ wda_artifacts_jjun/
 *.ipa
 # Bundled Windows tools populated on the Windows box (see win/WINDOWS_TODO.md)
 win/tools/
+# PyInstaller bundle output (built locally, distribute separately)
+win/dist/
+win/gui/_build/
