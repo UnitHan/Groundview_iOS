@@ -4,7 +4,7 @@ Windows 10/11에서 iOS 17+ 단말을 **무선(WiFi)**으로 WDA 기동하게 �
 macOS에서 원리·레시피를 검증했고, 크로스플랫폼 코드와 Windows 스크립트를 미리 넣어두었습니다.
 이 문서를 체크리스트 삼아 Windows에서 이어서 진행하세요.
 
-> ⚠️ macOS에서 작성/빌드 검증한 부분과, **Windows에서만 검증 가능한 부분**을 구분해 표기했습니다.
+> ⚠️ 구현·기록상 빌드 검증된 부분과, **실기기·Windows에서 추가 검증할 부분**을 구분해 표기했습니다.
 > `.exe` 빌드·서비스 등록·Wintun 터널은 반드시 Windows에서 테스트해야 합니다.
 
 ---
@@ -31,7 +31,7 @@ macOS에서 원리·레시피를 검증했고, 크로스플랫폼 코드와 Wind
       회사 정책으로 iTunes 차단 시 Store 앱 사용. Bonjour는 불필요(tunneld `--wifi`가 자체 mDNS 수행).
       자세한 근거: `win/WHY_WIRELESS.md`
 - [ ] **Wintun** — `wintun.dll`을 `pymobiledevice3.exe`와 같은 폴더 또는 PATH에 배치 (https://www.wintun.net)
-- [ ] **Node.js 18+** (앱 빌드용), 이 리포지토리 클론 후 `npm ci`
+- [ ] **Node.js 22.12+** (앱 빌드용), 이 리포지토리 클론 후 `npm ci`
 - [ ] 방화벽: mDNS(UDP 5353) 및 로컬 터널 트래픽 허용
 
 ---
@@ -78,8 +78,8 @@ macOS에서 원리·레시피를 검증했고, 크로스플랫폼 코드와 Wind
 - 무선 성공 시 기기 LAN IP를 앱 WiFi 경로에 자동 등록(health/capture가 IP로 접속).
 
 Windows에서 할 일:
-- [x] pymobiledevice3 경로 자동 해석 — `src/config.ts`가 win에서 `.venv\Scripts\` →
-      `resources\win\tools\` → PATH 순으로 `pymobiledevice3.exe`를 찾음. config 파일의
+- [x] pymobiledevice3 경로 자동 해석 — `src/config.ts`가 win에서 패키지 `win\tools\` → 프로젝트 `win\tools\` →
+      `.venv\Scripts\` → PATH 순으로 `pymobiledevice3.exe`를 찾음. config 파일의
       macOS 경로는 존재하지 않으면 자동 무시. (env `PYMOBILEDEVICE3_PATH`로 override 가능)
 - [ ] `launcher.runnerBundleId` 설정(선택) — 자동 탐색 실패 시에만 필요.
       예: `com.jjun.1.WebDriverAgentRunner.xctrunner` (설치된 러너 번들 ID)
@@ -105,7 +105,7 @@ Windows에서 할 일:
 Windows에서 할 일:
 - [ ] **번들 도구 배치**: `win/tools/`에 `pymobiledevice3.exe`, `ios.exe`, `wintun.dll` 넣기
       (pymobiledevice3는 PyInstaller onefile로 빌드하거나 배포본 사용)
-- [ ] `electron/icon.ico` 준비(현재 `.icns`만 있음) → win 아이콘
+- [x] `electron/icon.ico` 포함 — Windows 아이콘 파일 준비됨
 - [ ] `npm run dist` (Windows에서) → NSIS 설치 exe 생성 (`release/`)
 - [ ] 설치 테스트:
   - [ ] 설치 시 `GroundViewTunneld` 예약 작업이 등록되고 tunneld가 부팅 시 상시 구동
@@ -116,14 +116,16 @@ Windows에서 할 일:
 
 ---
 
-## 5. Phase D — 미니 GUI — [ ]
+## 5. Phase D — 미니 GUI — 구현됨, 실기기 검증 필요
 
 경량 전용 도구(기기 선택 + "무선 WDA 실행" 버튼만).
-- [ ] 방식 결정:
+- [x] 방식 결정: 독립 Python+tkinter 구현 (`win/gui/groundview_wireless.py`).
+  아래는 초기 검토 대안:
   - (A) 같은 Electron 앱의 **컴팩트 모드**(작은 BrowserWindow, DevicesPage 축소판) — 재사용 최대
   - (B) 독립 Python+tkinter 도구 — `launch-wda.ps1` 로직을 그대로 호출
-- [ ] 최소 기능: 기기 목록 / 상태 표시(tunneld·DDI·WDA) / 실행·중지 / WDA_URL 복사
-- [ ] 상태 API 재사용: `GET /api/wda/status`, `POST /api/wda/launch`, `POST /api/wda/stop`
+- [x] 기기 목록·상태·무선 실행·URL 표시 및 포워더·워치독 코드 구현.
+- [ ] GUI 실기기 동작·배포 검증. 상세 사용법: `win/gui/README.md`
+- Electron 상태 API: `GET /api/wda/status`, `POST /api/wda/launch`, `POST /api/wda/stop`
 
 ---
 
@@ -156,7 +158,7 @@ Windows에서 할 일:
 - [ ] 기본 터널 도구: **pymobiledevice3** vs **go-ios** (안정성 비교 후 결정)
 - [ ] 백그라운드 상주 방식: **예약 작업(현재 기본)** vs 정식 Windows 서비스(NSSM/WinSW)
 - [ ] pymobiledevice3 배포 방식: PyInstaller onefile 번들 vs 설치 시 pip
-- [ ] 미니 GUI: Electron 컴팩트 모드 vs 독립 tkinter
+- [x] 미니 GUI: 독립 tkinter 구현.
 
 ---
 

@@ -5,8 +5,7 @@
   "main": "electron/main.js",
   "description": "GroundView iOS adapter (WDA capture, device listing, locator inputs).",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "diagnose:port": "npm run build && node dist/diagnosePort.js",
+    "build": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\" && tsc -p tsconfig.json",
     "test": "vitest run",
     "cli": "node dist/cli.js",
     "dev:ts": "tsc -w -p tsconfig.json",
@@ -22,9 +21,14 @@
     "watch": "tsc -w -p tsconfig.json",
     "dev": "npm run build && concurrently \"npm:watch\" \"npm:serve:api\" \"npm:dev:ui\" \"wait-on http://localhost:5173 && electron electron/main.js\"",
     "pack": "npm run build && npm run build:ui && electron-builder --dir",
-    "dist": "npm run build && npm run build:ui && electron-builder"
+    "dist": "npm run build && npm run build:ui && electron-builder",
+    "build:diagnostics": "tsc -p tsconfig.diagnostics.json",
+    "diagnose:click": "npm run build:diagnostics && node .diagnostics/diagnostics/clickDetection.js",
+    "diagnose:xml": "npm run build:diagnostics && node .diagnostics/diagnostics/xmlParser.js",
+    "diagnose:xml:real": "npm run build:diagnostics && node .diagnostics/diagnostics/xmlParser.real.js"
   },
   "devDependencies": {
+    "@electron/notarize": "^2.5.0",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@types/xml2js": "^0.4.14",

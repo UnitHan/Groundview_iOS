@@ -40,23 +40,18 @@ function configFromEnv(env: NodeJS.ProcessEnv): WdaConfig {
   return { options, logFile: logFile || undefined };
 }
 
-// First existing path among candidates, else the last candidate (fallback that
-// resolves through PATH). Lets a platform-specific config value be ignored on a
-// platform where it doesn't exist (e.g. a macOS pymobiledevice3 path on Windows).
-function firstExisting(candidates: Array<string | undefined>, fallback: string): string {
-  for (const c of candidates) {
-    if (c && fs.existsSync(c)) return c;
-  }
-  // If an explicit value was given but doesn't exist as a file, still honour it
-  // (it may resolve through PATH); otherwise use the fallback.
-  const explicit = candidates.find((c) => !!c);
-  return explicit || fallback;
+// Explicit environment overrides may be commands on PATH. Ignore stale absolute
+// paths from another machine's config; otherwise prefer existing bundled tools.
+function resolveTool(override: string | undefined, configured: string | undefined, candidates: string[], fallback: string): string {
+  if (override) return override;
+  if (configured && (fs.existsSync(configured) || !/[\\/]/.test(configured))) return configured;
+  return candidates.find((candidate) => fs.existsSync(candidate)) || fallback;
 }
 
 // Candidate locations for a bundled Windows .exe tool, tried in order:
 //   1) <resourcesPath>\win\tools\<name>  (packaged app: extraResources land here,
 //      OUTSIDE app.asar — process.resourcesPath is the only correct base)
-//   2) resources\win\tools\<name>        (repo/dev layout relative to project root)
+//   2) win\tools\<name>        (repo/dev layout relative to project root)
 //   3) .venv\Scripts\<name>              (dedicated dev virtualenv, see WINDOWS_TODO)
 function winBundledCandidates(name: string): string[] {
   const root = path.resolve(__dirname, '..'); // dist/ -> project root (dev)
@@ -67,7 +62,7 @@ function winBundledCandidates(name: string): string[] {
   if (resourcesPath) {
     cands.push(path.join(resourcesPath, 'win', 'tools', name));
   }
-  cands.push(path.join(root, 'resources', 'win', 'tools', name));
+  cands.push(path.join(root, 'win', 'tools', name));
   cands.push(path.join(root, '.venv', 'Scripts', name));
   return cands;
 }
@@ -85,19 +80,21 @@ export function loadLauncherConfig(env: NodeJS.ProcessEnv = process.env): Launch
   let iproxyPath: string;
   let iosPath: string;
   if (isWin) {
-    pymobiledevice3Path = firstExisting(
-      [env.PYMOBILEDEVICE3_PATH, fileBlock.pymobiledevice3Path, ...winBundledCandidates('pymobiledevice3.exe')],
+    pymobiledevice3Path = resolveTool(
+      env.PYMOBILEDEVICE3_PATH, fileBlock.pymobiledevice3Path, winBundledCandidates('pymobiledevice3.exe'),
       'pymobiledevice3'
     );
     iproxyPath = env.IPROXY_PATH || fileBlock.iproxyPath || 'iproxy';
-    iosPath = firstExisting(
-      [env.GO_IOS_PATH, fileBlock.iosPath, ...winBundledCandidates('ios.exe')],
+    iosPath = resolveTool(
+      env.GO_IOS_PATH, fileBlock.iosPath, winBundledCandidates('ios.exe'),
       'ios'
     );
   } else {
-    pymobiledevice3Path = env.PYMOBILEDEVICE3_PATH || fileBlock.pymobiledevice3Path || '/Users/qabulls/Appkium_ixiO_Caller/.venv/bin/pymobiledevice3';
-    iproxyPath = env.IPROXY_PATH || fileBlock.iproxyPath || '/opt/homebrew/bin/iproxy';
-    iosPath = env.GO_IOS_PATH || fileBlock.iosPath || 'ios';
+    pymobiledevice3Path = resolveTool(env.PYMOBILEDEVICE3_PATH, fileBlock.pymobiledevice3Path,
+      [path.resolve(__dirname, '..', '.venv', 'bin', 'pymobiledevice3')], 'pymobiledevice3');
+    iproxyPath = resolveTool(env.IPROXY_PATH, fileBlock.iproxyPath,
+      ['/opt/homebrew/bin/iproxy', '/usr/local/bin/iproxy'], 'iproxy');
+    iosPath = resolveTool(env.GO_IOS_PATH, fileBlock.iosPath, [], 'ios');
   }
   return {
     pymobiledevice3Path,

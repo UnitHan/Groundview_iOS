@@ -1,5 +1,7 @@
 # GroundView iOS 개발 계획
 
+> 아래 일정은 초기 계획이며 완료 보고가 아닙니다. 현재는 Windows 지원 코드와 설치된 WDA 러너 실행 기능도 포함합니다. 구현·검증 범위는 [README](README.md)와 [Windows 체크리스트](win/WINDOWS_TODO.md)를 참고하세요.
+
 ## 목표
 - 기존 GroundView(안드로이드)와 동일한 화면 그라운딩·로케이터 생성 경험을 iOS(WDA) 환경으로 확장한다.
 - 공통 UI/로직(core)을 재사용하고, iOS 특화 수집(스크린샷+source)과 로케이터(Class Chain/Predicate/AccId) 생성 파이프라인을 제공한다.
@@ -24,7 +26,7 @@
 - 로케이터 생성: AccId > iOS Predicate > Class Chain > 좌표/이미지 fallback, XPath 최소화.
 - 코드 생성: Appium 1/2/3, Python/Java 템플릿; 버튼 일괄 스크립트.
 - UI/UX: 온보딩 iOS READY 카드, 디바이스 선택/캡처, 메인 분석 뷰(공통 재사용).
-- 배포: macOS 전용 dmg/zip, WDA 수동 빌드 안내 포함.
+- 배포: macOS DMG 및 Windows NSIS 설치 구성, WDA 수동 빌드·서명 안내 포함.
 
 ## 위험 & 대응
 - WDA 미응답/포트 충돌: 상태 체크/재시도, 포트 변경 가이드.

@@ -19,3 +19,6 @@ win/tools/
 # PyInstaller bundle output (built locally, distribute separately)
 win/dist/
 win/gui/_build/
+
+# Compiled manual diagnostics
+.diagnostics/

@@ -1,103 +1,127 @@
 # GroundView iOS
 
-iOS 앱 UI 요소를 실시간으로 캡처하고, Appium 자동화 테스트 코드를 자동 생성하는 macOS 데스크탑 앱입니다.
+WDA(WebDriverAgent)로 iPhone의 화면과 UI 계층을 수집하고, 요소를 선택해 Appium 테스트 코드를 생성하는 Electron 데스크톱 앱입니다. React·TypeScript UI와 Node.js API 서버로 구성됩니다.
 
-<p align="center">
-  <img src="docs/screenshot.png" alt="GroundView iOS 스크린샷" width="800"/>
-</p>
+현재 버전은 **0.1.0**입니다. macOS Apple Silicon용 패키징과 Windows 지원 코드가 있으며, Windows 설치·무선 연결의 전체 검증은 진행 중입니다.
 
----
+## 구현된 기능
 
-## 주요 기능
+- WDA 상태 확인, 스크린샷·XML 수집, USB/WiFi 연결
+- UI 계층 트리 탐색, 화면 오버레이 선택, Shift+클릭으로 겹친 요소 순환
+- Accessibility ID / iOS Predicate / Class Chain / XPath 기반 Python·Java 코드 생성
+- UI에서 Appium 1.x·2.x 코드 선택; 별도 코드 생성 모듈은 Appium 3 옵션도 제공
+- 기기·앱 정보 조회와 Appium capabilities 생성
+- Gemini API를 이용한 코드 추천·OCR (API 키와 네트워크 필요)
+- 캡처 ZIP 저장·불러오기
+- 설치된 WDA 러너 실행·중지, 무선 IP 재탐색
+- Windows용 별도 Python GUI, 포워더·워치독 도구
 
-- **실시간 UI 캡처** — WDA(WebDriverAgent)를 통해 iOS 기기의 화면과 UI 계층 구조를 즉시 덤프
-- **USB / WiFi 연결 지원** — USB 케이블 없이 같은 네트워크의 iPhone에 무선으로 연결
-- **UI 계층 트리 뷰** — 모든 XCUIElement를 트리 형태로 탐색, 숨겨진 요소(visible=false)도 👻 표시로 확인 가능
-- **오버레이 클릭 선택** — 스크린샷 위를 클릭하면 해당 요소 자동 선택, Shift+클릭으로 겹친 레이어 순환
-- **접근성 기반 요소 인식** — `accessible="true"` 요소 우선 선택, `traits` 속성으로 버튼/링크 자동 식별
-- **Appium 로케이터 자동 생성** — Accessibility ID / Predicate / Class Chain / XPath 우선순위 순으로 코드 생성
-- **Appium 1.x / 2.x 지원** — Python, Java 코드 동시 생성
-- **Gemini AI 코드 추천** — Google Gemini API 연동으로 더 안정적인 로케이터 제안
-- **캡처 저장** — 스크린샷 + XML + 트리 JSON을 ZIP으로 저장
+## 플랫폼과 준비 사항
 
----
+| 환경 | 준비 사항 및 현재 범위 |
+|------|-----------------------|
+| macOS | Apple Silicon용 DMG 구성. WDA 최초 빌드·서명에는 기기 iOS와 호환되는 Xcode 및 Apple 개발 서명 환경 필요 |
+| Windows 10/11 | Electron 앱·NSIS 설치 구성 및 무선 WDA 실행 코드 제공. 설치·재부팅·실기기 통합 검증은 [체크리스트](win/WINDOWS_TODO.md) 참고 |
+| iPhone | 서명된 WDA 러너 설치, 개발자 모드·컴퓨터 신뢰 설정. Windows 무선 도구는 iOS 17+ 대상 |
+| 개발 환경 | Node.js 22.12 이상 권장. 현재 Vite 7의 Node 조건은 `^20.19.0 || >=22.12.0` |
 
-## 시스템 요구사항
+WDA 최초 빌드·서명·설치는 별도로 준비해야 합니다. 앱의 **WDA 실행** 기능은 이미 설치된 러너를 실행합니다. 무선 실행에는 `pymobiledevice3`와 실행 중인 `tunneld`가 필요합니다. Windows의 터널 구성에는 Apple Mobile Device Support와 Wintun, 관리자 권한이 필요합니다.
 
-| 항목 | 요구사항 |
-|------|----------|
-| OS | macOS 12 Ventura 이상 (Apple Silicon) |
-| Xcode | 14 이상 (WDA 빌드용) |
-| iPhone | iOS 15 이상, WDA 실행 중 |
-| 연결 | USB 또는 WiFi (같은 네트워크) |
+## 설치와 사용
 
----
+macOS 배포 파일은 [Releases](https://github.com/UnitHan/Groundview_iOS/releases)에서 확인할 수 있습니다. DMG를 열어 앱을 Applications 폴더로 복사합니다. 서명·공증 여부는 개별 배포 파일에 따라 확인해야 합니다.
 
-## 설치 및 실행
+1. iPhone에 WDA를 설치하고 실행합니다. USB 연결은 `iproxy`, WiFi 연결은 기기 IP와 WDA 포트(기본 `8100`)를 사용합니다.
+2. Devices 화면에서 기기를 선택합니다. 필요하면 **WDA 실행** 또는 WiFi 연결 패널을 사용합니다.
+3. **Capture**로 현재 화면을 수집합니다.
+4. 화면이나 트리에서 요소를 선택하고 Python·Java 코드를 생성·복사합니다.
+5. 필요하면 캡처를 ZIP으로 저장하거나 기존 ZIP을 불러옵니다.
 
-### 1. DMG 다운로드
+자세한 사용법은 [사용자 매뉴얼](USER_MANUAL.md), Windows 전용 GUI는 [별도 안내](win/gui/README.md)를 참고하세요.
 
-[Releases](https://github.com/UnitHan/Groundview_iOS/releases) 페이지에서 최신 `GroundView iOS-x.x.x-arm64.dmg`를 다운로드합니다.
-
-### 2. WDA 준비
-
-iPhone에서 WebDriverAgent가 실행 중이어야 합니다.
+## 로컬 개발
 
 ```bash
-# USB 연결 시 iproxy로 포트 포워딩
-iproxy 8100:8100
-```
-
-WiFi 연결 시에는 앱 내 **WiFi 연결** 패널에서 iPhone IP를 직접 입력합니다.
-
-### 3. 앱 실행
-
-DMG를 열어 Applications 폴더로 드래그 후 실행합니다.
-
-> **Gatekeeper 경고 시**: 시스템 환경설정 → 보안 및 개인 정보 → "확인 없이 열기"
-
----
-
-## 사용 방법
-
-1. 앱 실행 후 **Devices** 화면에서 연결된 iPhone 선택
-2. **Capture** 버튼으로 현재 화면 캡처
-3. 스크린샷 위를 클릭하거나 트리에서 요소 선택
-4. **코드 추천** 버튼으로 Appium 코드 자동 생성
-5. 생성된 코드를 복사해서 테스트 스크립트에 붙여넣기
-
----
-
-## 개발 환경 설정
-
-```bash
-# 의존성 설치
-npm install
-
-# 개발 서버 실행
+npm ci
 npm run dev
-
-# 빌드
-npm run build
-npm run build:ui
-
-# DMG 패키징
-CSC_IDENTITY_AUTO_DISCOVERY=false npm run dist
 ```
 
----
+`dev`는 백엔드 빌드·감시, API 서버, Vite, Electron을 함께 실행합니다. UI 개발 서버는 `5173`, API 서버는 `4321` 포트를 사용합니다. 현재 UI는 API 주소 `http://localhost:4321`을 사용하므로 백엔드 포트만 바꾸면 연결되지 않습니다.
 
-## 기술 스택
+```bash
+npm test          # 기기 없이 실행하는 단위 테스트
+npm run build     # 백엔드 TypeScript 빌드
+npm run build:ui  # React UI 빌드
+```
 
-- **Electron** — 데스크탑 앱 프레임워크
-- **React + TypeScript** — UI
-- **Vite** — 프론트엔드 빌드
-- **WDA (WebDriverAgent)** — iOS UI 덤프
-- **xml2js** — XML 파싱
-- **Zustand** — 상태 관리
+UI 빌드는 Vite 번들링 검사이며 별도의 UI 전체 타입 검사를 포함하지 않습니다. 자동 테스트 통과만으로 실기기 연결·캡처·설치 검증이 완료되는 것은 아닙니다.
 
----
+### WDA와 실행 도구 설정
 
-## 라이선스
+`wda.config.sample.json`을 참고해 `wda.config.json`을 설정하거나 `WDA_CONFIG`로 별도 파일을 지정합니다. 환경 변수가 파일 설정보다 우선합니다.
 
-MIT License
+| 환경 변수 | 용도 |
+|-----------|------|
+| `WDA_CONFIG` | 설정 파일 경로 |
+| `WDA_HOST`, `WDA_PORT` | WDA 주소·포트 |
+| `PYMOBILEDEVICE3_PATH` | WDA 실행 도구 경로 또는 PATH 명령 |
+| `IPROXY_PATH` | USB 포트 포워딩 도구 경로 |
+| `GO_IOS_PATH` | go-ios 도구 경로 |
+| `WDA_RUNNER_BUNDLE_ID` | 자동 탐색 실패 시 러너 번들 ID |
+| `TUNNELD_HOST`, `TUNNELD_PORT` | 터널 데몬 주소 (기본 `127.0.0.1:49151`) |
+
+macOS에서는 프로젝트 `.venv/bin/pymobiledevice3`를 찾고, 없으면 PATH의 명령을 사용합니다. Windows에서는 패키지의 `win/tools/`, 프로젝트 `win/tools/`, `.venv/Scripts/` 순으로 확인한 뒤 PATH를 사용합니다. 환경 변수로 지정한 경로는 그대로 사용하며, 설정 파일에 남은 다른 PC의 존재하지 않는 경로는 건너뜁니다.
+
+### 수동 진단
+
+`diagnostics/`는 과거 파서·클릭 동작을 살펴보는 독립 진단 스크립트입니다. 실제 앱 구현의 회귀 테스트를 대신하지 않으며 `npm test`와 앱 빌드에서는 제외됩니다.
+
+```bash
+npm run diagnose:click
+npm run diagnose:xml
+# /tmp/wda_full.xml에 WDA XML을 준비한 다음 실행
+npm run diagnose:xml:real
+```
+
+## 패키징
+
+### macOS
+
+```bash
+npm run dist -- --mac --arm64
+```
+
+`release/`에 DMG가 생성됩니다. 현재 `package.json`에는 프로젝트의 Developer ID 서명 ID가 지정되어 있어, 다른 개발자는 자신의 서명 환경으로 바꿔야 합니다. Hardened Runtime·entitlements가 설정되어 있고, `build/notarize.js`의 `afterSign` 훅이 공증과 staple을 수행합니다.
+
+공증 자격 증명을 로컬 Keychain에 먼저 등록합니다. 비밀번호는 명령에 넣지 않고 대화형으로 입력합니다.
+
+```bash
+xcrun notarytool store-credentials groundview-notary
+npm run dist -- --mac --arm64
+```
+
+다른 프로필 이름은 `NOTARY_KEYCHAIN_PROFILE`로 지정합니다. `SKIP_NOTARIZE=1`은 공증만 생략하며 코드 서명은 유지합니다. 로컬 확인용 앱 디렉터리는 `SKIP_NOTARIZE=1 npm run pack`으로 만들 수 있습니다.
+
+### Windows
+
+Windows에서 `win/tools/`에 실행 도구를 준비한 뒤 패키징합니다.
+
+```powershell
+# Python venv에 pymobiledevice3와 pyinstaller 설치 후 실행
+python win/gui/build_bundle.py
+npm ci
+npm run dist -- --win
+```
+
+Python 빌드는 `win/tools/pymobiledevice3.exe`와 `win/dist/`의 독립 GUI·포워더·워치독을 생성합니다. Electron NSIS 설치 프로그램은 별도 산출물이며, 설치 시 `GroundViewTunneld` 예약 작업 등록을 시도하고 제거 시 해당 작업을 삭제합니다. 실제 설치·서비스 동작은 [Windows 검증 목록](win/WINDOWS_TODO.md)에 따라 확인해야 합니다.
+
+## 코드 구조와 남은 검증
+
+- `src/`: WDA 클라이언트·런처, 기기 탐색, API, 코드 생성
+- `ui/src/`: Devices·Analyze 화면, 트리·오버레이, 상태 관리
+- `electron/`: 데스크톱 프로세스·preload
+- `build/`: macOS 공증 훅·entitlements
+- `sh/`, `win/`: 플랫폼별 실행·설정 도구
+- `diagnostics/`: 수동 진단
+
+다음 검증이 남아 있습니다: 새 PC에서 도구 탐색·설치, USB/WiFi 실기기 캡처, Windows 설치·재부팅·잠금 복귀, Appium 코드 실제 실행. 히스토리 비교·배치 처리·로케이터 안정성 점수화는 확장 계획입니다. [개발 계획](plan.md)과 [요구사항](requirements.md)은 초기 목표를 포함하므로 현재 지원 범위는 이 README와 구현을 기준으로 확인하세요.

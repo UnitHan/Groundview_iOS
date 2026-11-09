@@ -1,5 +1,5 @@
 import { DeviceService, CaptureResult, HealthStatus, WdaOptions } from './types';
-import { listDevices, isMac } from './deviceList';
+import { listDevices } from './deviceList';
 import { WdaClient } from './wdaClient';
 
 type DeviceListFn = typeof listDevices;
@@ -7,19 +7,16 @@ type DeviceListFn = typeof listDevices;
 type Deps = {
   client?: WdaClient;
   listFn?: DeviceListFn;
-  isMac?: () => boolean;
 };
 
 export class WdaService implements DeviceService {
   platform: 'ios' = 'ios';
   private client: WdaClient;
   private listFn: DeviceListFn;
-  private isMacFn: () => boolean;
 
   constructor(opts: WdaOptions = {}, deps: Deps = {}) {
     this.client = deps.client || new WdaClient(opts);
     this.listFn = deps.listFn || listDevices;
-    this.isMacFn = deps.isMac || isMac;
   }
 
   // Device discovery and WDA I/O are cross-platform: listDevices() picks the
